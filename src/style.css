@@ -1,0 +1,1216 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Serif+KR:wght@300;600;900&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #070504;
+  font-family: 'Nanum Myeongjo', 'Noto Serif KR', serif;
+  color: #d8c8b0;
+}
+
+#canvas-container {
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* Horror Atmosphere Post-Processing Overlay */
+.horror-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Heavy Vignette */
+.vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, transparent 35%, rgba(4, 2, 2, 0.65) 75%, rgba(0, 0, 0, 0.95) 100%);
+  mix-blend-mode: multiply;
+}
+
+/* 1930s Film Grain Noise */
+.film-grain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  animation: grainJitter 0.12s steps(2) infinite;
+}
+
+@keyframes grainJitter {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(-2px, 2px); }
+  100% { transform: translate(2px, -1px); }
+}
+
+/* Subtle Sepia Color Grade */
+.color-grade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(35, 20, 10, 0.06);
+  mix-blend-mode: color;
+}
+
+/* Center Crosshair */
+#crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 245, 220, 0.45);
+  box-shadow: 0 0 6px rgba(255, 180, 80, 0.4);
+  pointer-events: none;
+  z-index: 10;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#crosshair.interactable {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 2px solid #e2a850;
+  box-shadow: 0 0 12px rgba(226, 168, 80, 0.7);
+  animation: pulseCrosshair 1.2s infinite ease-in-out;
+}
+
+#crosshair.interactable::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  background: #ff5533;
+  border-radius: 50%;
+}
+
+@keyframes pulseCrosshair {
+  0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.8; }
+  50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.8; }
+}
+
+/* HUD Overlay */
+#hud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+  transition: opacity 0.3s ease;
+}
+
+#hud-overlay.hidden {
+  opacity: 0;
+}
+
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.location-badge {
+  background: rgba(18, 12, 8, 0.75);
+  border: 1px solid rgba(140, 100, 50, 0.35);
+  padding: 10px 18px;
+  border-radius: 4px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.location-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #dfceb4;
+  margin-bottom: 4px;
+}
+
+.location-time {
+  font-size: 12px;
+  color: #b54538;
+  letter-spacing: 1px;
+}
+
+.hud-status-bar {
+  display: flex;
+  gap: 12px;
+}
+
+.status-tag {
+  background: rgba(18, 12, 8, 0.75);
+  border: 1px solid rgba(140, 100, 50, 0.25);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #baa890;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38b555;
+  box-shadow: 0 0 6px #38b555;
+}
+
+.status-dot.active {
+  background: #ffaa33;
+  box-shadow: 0 0 8px #ffaa33;
+}
+
+/* Bottom Interaction Prompt */
+#interaction-prompt {
+  position: absolute;
+  bottom: 85px;
+  left: 50%;
+  transform: translate(-50%, 10px) scale(0.95);
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(18, 12, 8, 0.85);
+  border: 1px solid #c99343;
+  border-left: 4px solid #c99343;
+  padding: 12px 24px;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 15px rgba(201, 147, 67, 0.25);
+  backdrop-filter: blur(8px);
+  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+  z-index: 10;
+}
+
+#prompt-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffde99;
+  letter-spacing: 1px;
+}
+
+/* Bottom Controls Helper */
+.hud-bottom {
+  display: flex;
+  justify-content: center;
+}
+
+.controls-hint {
+  display: flex;
+  gap: 18px;
+  background: rgba(14, 9, 6, 0.8);
+  border: 1px solid rgba(120, 85, 45, 0.3);
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #9d8c75;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.key-tag {
+  color: #e2ba77;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+/* Start / Intro Screen */
+#start-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(16, 10, 6, 0.92) 0%, rgba(5, 3, 2, 0.98) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+  cursor: pointer;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+#start-screen.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.start-content {
+  text-align: center;
+  max-width: 650px;
+  padding: 40px;
+  border: 1px solid rgba(170, 120, 60, 0.4);
+  background: rgba(12, 7, 4, 0.7);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), inset 0 0 30px rgba(0, 0, 0, 0.8);
+  border-radius: 6px;
+  position: relative;
+}
+
+.start-content::before {
+  content: '【 禁 止 區 域 】';
+  display: block;
+  font-size: 12px;
+  letter-spacing: 6px;
+  color: #a6241e;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+.main-title {
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #e8d7be;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 600px;
+  cursor: pointer;
+}
+
+.title-char {
+  display: inline-block;
+  min-width: 44px;
+  text-align: center;
+  position: relative;
+  transition: color 0.15s ease, text-shadow 0.15s ease;
+  transform-origin: center center;
+}
+
+.title-char-space {
+  display: inline-block;
+  width: 10px;
+}
+
+/* Scrambling state: rapid chromatic shudder and glyph glitch */
+.title-char.scrambling {
+  color: #e84c38;
+  text-shadow: -2px 0 2px rgba(180, 30, 20, 0.9), 2px 0 2px rgba(40, 110, 170, 0.8), 0 0 10px rgba(232, 76, 56, 0.6);
+  animation: charGlitch 0.08s infinite alternate;
+  filter: blur(0.3px);
+}
+
+@keyframes charGlitch {
+  0% { transform: translateY(-1px) scale(1.08) rotate(-1.5deg); }
+  50% { transform: translateY(2px) scale(0.96) rotate(1deg); }
+  100% { transform: translateY(-2px) scale(1.04) rotate(-0.5deg); }
+}
+
+/* Stamped state: forceful letterpress imprint impact */
+.title-char.stamped {
+  animation: stampImpact 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
+
+@keyframes stampImpact {
+  0% {
+    transform: scale(1.35) translateY(-4px) rotateX(15deg);
+    color: #ffeedd;
+    text-shadow: 0 0 16px rgba(240, 180, 80, 0.9), 0 0 30px rgba(166, 36, 30, 0.6);
+  }
+  50% {
+    transform: scale(0.95) translateY(1px);
+    color: #f7e6c8;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    color: #e8d7be;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+  }
+}
+
+.sub-title {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  letter-spacing: 5px;
+  color: #9c8263;
+  margin-bottom: 24px;
+}
+
+.intro-desc {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #b5a48d;
+  margin-bottom: 32px;
+  font-weight: 400;
+}
+
+.start-btn-pulse {
+  display: inline-block;
+  padding: 14px 36px;
+  border: 1px solid #c99343;
+  background: rgba(80, 45, 20, 0.35);
+  color: #f7e6c4;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  border-radius: 2px;
+  box-shadow: 0 0 20px rgba(201, 147, 67, 0.25);
+  animation: pulseBtn 2s infinite ease-in-out;
+  transition: all 0.3s ease;
+}
+
+@keyframes pulseBtn {
+  0% { transform: scale(1); box-shadow: 0 0 15px rgba(201, 147, 67, 0.2); }
+  50% { transform: scale(1.03); box-shadow: 0 0 25px rgba(201, 147, 67, 0.5); }
+  100% { transform: scale(1); box-shadow: 0 0 15px rgba(201, 147, 67, 0.2); }
+}
+
+.start-content:hover .start-btn-pulse {
+  background: rgba(140, 75, 30, 0.5);
+  border-color: #ffd077;
+  color: #ffffff;
+}
+
+.controls-guide-box {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px dashed rgba(140, 100, 50, 0.25);
+  font-size: 13px;
+  color: #8c7964;
+  line-height: 1.8;
+}
+
+/* Inspect Modal (조사하기 창) */
+#inspect-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(6, 4, 3, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 40;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+#inspect-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.inspect-card {
+  max-width: 580px;
+  width: 90%;
+  background: #18110b;
+  border: 1px solid #7c582f;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), inset 0 0 40px rgba(0, 0, 0, 0.7);
+  padding: 36px;
+  border-radius: 4px;
+  position: relative;
+  transform: translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+#inspect-modal.active .inspect-card {
+  transform: translateY(0);
+}
+
+.inspect-header {
+  border-bottom: 1px solid rgba(160, 115, 60, 0.3);
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#inspect-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #edd9be;
+  letter-spacing: 1px;
+}
+
+#inspect-tag {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #a6241e;
+  font-family: 'Cinzel', serif;
+}
+
+#inspect-desc {
+  font-size: 16px;
+  line-height: 1.9;
+  color: #c9b89e;
+  margin-bottom: 30px;
+}
+
+.inspect-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#inspect-close {
+  background: rgba(60, 35, 18, 0.6);
+  border: 1px solid #9c713b;
+  color: #dfcdb4;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+#inspect-close:hover {
+  background: #874921;
+  color: #ffffff;
+  border-color: #e5b066;
+}
+
+/* ==========================================================================
+   Interactive Clue & Puzzle Views (확대 조사 상세 뷰)
+   ========================================================================== */
+#inspect-interactive-view {
+  margin-bottom: 20px;
+  background: #0f0a07;
+  border: 1px solid #4a341f;
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  position: relative;
+  overflow: hidden;
+}
+
+#inspect-interactive-view:empty {
+  display: none;
+}
+
+.clue-zoom-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.clue-zoom-img {
+  max-width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border: 1px solid #73502d;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+}
+
+.clue-highlight-box {
+  background: rgba(30, 18, 10, 0.9);
+  border: 1px solid #9e2b24;
+  padding: 12px 18px;
+  border-radius: 4px;
+  text-align: center;
+  width: 100%;
+}
+
+.red-handwriting {
+  color: #e6392f;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(230, 57, 47, 0.4);
+}
+
+.red-circle-marker {
+  display: inline-block;
+  border: 2px solid #e6392f;
+  border-radius: 50%;
+  padding: 2px 10px;
+  margin: 0 4px;
+}
+
+.red-underline-marker {
+  border-bottom: 3px solid #e6392f;
+  padding-bottom: 2px;
+  color: #f7e6c4;
+}
+
+/* Proof Newspaper Inspect View */
+.proof-container {
+  width: 100%;
+  background: #d8cbb5;
+  color: #1a140f;
+  padding: 24px;
+  border: 2px solid #5a4025;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.25);
+  font-family: 'Nanum Myeongjo', serif;
+  position: relative;
+}
+
+.proof-blurred {
+  filter: blur(5px);
+  user-select: none;
+  opacity: 0.6;
+}
+
+.proof-blur-notice {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 8, 4, 0.92);
+  border: 1px solid #b33932;
+  color: #ffcccc;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  z-index: 5;
+  border-radius: 4px;
+}
+
+.proof-headline {
+  font-size: 22px;
+  font-weight: 900;
+  border-bottom: 2px solid #1a140f;
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.proof-clue-line {
+  font-size: 18px;
+  font-weight: 700;
+  color: #b51c14;
+  margin-top: 10px;
+  text-align: center;
+  background: rgba(181, 28, 20, 0.08);
+  padding: 8px;
+  border: 1px dashed #b51c14;
+}
+
+/* Brass Dial Lock for Drawer 24 (퍼즐 A) */
+.dial-lock-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 10px;
+}
+
+.dial-lock-frame {
+  display: flex;
+  gap: 12px;
+  background: #2b1f14;
+  padding: 16px 22px;
+  border: 3px solid #8f6a39;
+  border-radius: 6px;
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 8px 25px rgba(0,0,0,0.9);
+}
+
+.dial-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.dial-btn {
+  background: #47321e;
+  border: 1px solid #a37c44;
+  color: #f2e2cb;
+  width: 38px;
+  height: 28px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s ease;
+}
+
+.dial-btn:hover {
+  background: #784e27;
+  border-color: #ffd27d;
+}
+
+.dial-number {
+  width: 44px;
+  height: 52px;
+  background: #110c08;
+  border: 2px solid #6b4d2b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffeed3;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+}
+
+.dial-lock-feedback {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.dial-lock-feedback.success {
+  color: #55ff77;
+}
+
+.dial-lock-feedback.locked {
+  color: #ffaa55;
+}
+
+/* Interactive Action Bar */
+.inspect-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.inspect-action-bar:empty {
+  display: none;
+}
+
+.inspect-action-btn {
+  background: #802e1b;
+  border: 1px solid #d45b42;
+  color: #ffffff;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.inspect-action-btn:hover {
+  background: #a83820;
+  border-color: #ff8c73;
+  box-shadow: 0 0 12px rgba(212, 91, 66, 0.6);
+  transform: translateY(-1px);
+}
+
+.inspect-action-btn:active {
+  transform: translateY(1px);
+}
+
+/* ==========================================================================
+   Inventory Bar (소지품 UI)
+   ========================================================================== */
+#inventory-bar {
+  position: absolute;
+  bottom: 60px;
+  left: 24px;
+  background: rgba(15, 10, 7, 0.92);
+  border: 1px solid #6b4b27;
+  border-radius: 4px;
+  padding: 10px 16px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.85);
+  pointer-events: auto;
+}
+
+.inventory-title {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #cca468;
+  font-family: 'Cinzel', serif;
+}
+
+.inventory-items {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.empty-inv-text {
+  font-size: 12px;
+  color: #7a6652;
+}
+
+.inv-item-chip {
+  background: rgba(45, 28, 16, 0.9);
+  border: 1px solid #997341;
+  color: #f0dec5;
+  padding: 5px 12px;
+  border-radius: 2px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.inv-item-chip.highlight {
+  border-color: #e54b3b;
+  box-shadow: 0 0 10px rgba(229, 75, 59, 0.4);
+}
+
+/* ==========================================================================
+   식자공의 수첩 (Notebook Modal [Tab])
+   ========================================================================== */
+#notebook-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(4, 2, 2, 0.9);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 45;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+#notebook-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.notebook-book {
+  width: 92%;
+  max-width: 860px;
+  background: #1c140c;
+  border: 4px solid #573a1d;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.98), inset 0 0 50px rgba(0,0,0,0.8);
+  border-radius: 6px;
+  padding: 24px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notebook-cover-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid #573a1d;
+  padding-bottom: 10px;
+}
+
+.notebook-cover-title span {
+  font-size: 24px;
+  font-weight: 800;
+  color: #eeddc3;
+  letter-spacing: 4px;
+}
+
+.notebook-cover-title small {
+  color: #9c8368;
+  font-size: 13px;
+}
+
+.notebook-pages {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  min-height: 420px;
+}
+
+@media (max-width: 768px) {
+  .notebook-pages {
+    grid-template-columns: 1fr;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}
+
+.notebook-page {
+  background: #d8c7ad;
+  color: #21160d;
+  padding: 20px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 25px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+}
+
+.notebook-page.left-page {
+  border-right: 1px dashed rgba(60, 40, 20, 0.4);
+}
+
+.page-title {
+  font-size: 16px;
+  font-weight: 800;
+  border-bottom: 1px solid #4a341e;
+  padding-bottom: 6px;
+  color: #3b2410;
+  letter-spacing: 1px;
+}
+
+.notebook-clues-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.notebook-clue-item {
+  background: rgba(255, 255, 255, 0.35);
+  padding: 8px 12px;
+  border-left: 3px solid #82221b;
+  border-radius: 2px;
+  font-style: italic;
+}
+
+.notebook-clue-item.empty {
+  border-left-color: #887766;
+  color: #776655;
+  font-style: normal;
+}
+
+.puzzle-track-card {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid #7a5833;
+  padding: 12px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.track-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.track-header h4 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #22140a;
+}
+
+.track-stamp {
+  font-size: 12px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border: 1px solid #776655;
+  color: #776655;
+  border-radius: 2px;
+  letter-spacing: 1px;
+}
+
+.track-stamp.solved {
+  border: 2px solid #b51c14;
+  color: #b51c14;
+  background: rgba(181, 28, 20, 0.12);
+  transform: rotate(-4deg);
+  box-shadow: 0 0 6px rgba(181, 28, 20, 0.3);
+  font-weight: 900;
+}
+
+.track-hint {
+  font-size: 12.5px;
+  color: #554433;
+  line-height: 1.5;
+}
+
+.notebook-status-summary {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px dashed #7a5833;
+  text-align: center;
+}
+
+.print-ready-badge {
+  background: #a3221a;
+  color: #ffffff;
+  padding: 8px;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  border-radius: 3px;
+  animation: pulseBtn 1.5s infinite;
+  margin-bottom: 6px;
+}
+
+.print-ready-badge.hidden {
+  display: none;
+}
+
+.notebook-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#notebook-close-btn {
+  background: #3b2515;
+  border: 1px solid #825b2f;
+  color: #eedcc3;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+#notebook-close-btn:hover {
+  background: #5e371b;
+  border-color: #e5b066;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Jumpscare Overlay (1회용 점프스케어 연출)
+   ========================================================================== */
+#jumpscare-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0;
+  transition: opacity 0.05s ease;
+}
+
+#jumpscare-overlay.active {
+  opacity: 1;
+}
+
+.jumpscare-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, #7a0c0c 0%, #000000 100%);
+  mix-blend-mode: hard-light;
+}
+
+/* ==========================================================================
+   Reward Card / Printing Sequence Modal (9:16 보상 카드)
+   ========================================================================== */
+#reward-card-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.4s ease;
+}
+
+#reward-card-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.reward-card-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(3, 2, 2, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+.reward-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  max-height: 95vh;
+}
+
+/* Printing Machinery Roll-up Animation */
+.printing-animation-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.printing-animation-container.hidden {
+  display: none;
+}
+
+.press-roller {
+  width: 220px;
+  height: 28px;
+  background: linear-gradient(90deg, #111, #444, #111);
+  border-radius: 14px;
+  border: 2px solid #666;
+  box-shadow: 0 0 25px rgba(0,0,0,0.9);
+  animation: rollRotate 0.4s linear infinite;
+}
+
+@keyframes rollRotate {
+  0% { transform: scaleY(1); }
+  50% { transform: scaleY(0.9); }
+  100% { transform: scaleY(1); }
+}
+
+.paper-rolling-up {
+  width: 280px;
+  height: 200px;
+  background: #dbcaa8;
+  color: #1a120c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  border: 1px solid #7a5833;
+  animation: paperSlideUp 1.2s ease-out forwards;
+}
+
+@keyframes paperSlideUp {
+  0% { height: 0; opacity: 0; }
+  100% { height: 200px; opacity: 1; }
+}
+
+.rolling-ink-text {
+  font-size: 18px;
+  font-weight: 900;
+  color: #8c1e18;
+  letter-spacing: 2px;
+}
+
+/* Card 9:16 Display Frame */
+.card-display-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.card-display-container.hidden {
+  display: none;
+}
+
+.card-frame {
+  height: 76vh;
+  aspect-ratio: 9 / 16;
+  background: #000;
+  border: 3px solid #8f6a39;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#card-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.card-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.action-btn {
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn.primary {
+  background: #942b1a;
+  border: 1px solid #e06048;
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(148, 43, 26, 0.4);
+}
+
+.action-btn.primary:hover {
+  background: #b53521;
+  border-color: #ffa390;
+  box-shadow: 0 0 20px rgba(224, 96, 72, 0.6);
+}
+
+.action-btn.secondary {
+  background: #2b1d12;
+  border: 1px solid #73502b;
+  color: #dfceb7;
+}
+
+.action-btn.secondary:hover {
+  background: #47301e;
+  color: #ffffff;
+  border-color: #bfa073;
+}
+
