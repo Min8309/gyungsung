@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RecordedHorrorAudio } from './RecordedHorrorAudio.js';
 import { startPrintShopAmbience } from './PrintShopAmbience.js';
 
 export class SoundManager {
@@ -27,6 +28,10 @@ export class SoundManager {
 
       this.startHorrorDrone();
       this.ambience = startPrintShopAmbience(this.ctx, this.masterGain);
+      this.recordedAudio = new RecordedHorrorAudio(this.ctx, this.masterGain);
+      this.recordedAudio.ready.then(() => {
+        if (this.recordedAudio.music) this.droneGain.gain.value = 0.06;
+      });
       this.initialized = true;
     } catch (e) {
       console.warn('Web Audio API not supported or blocked:', e);
@@ -528,14 +533,15 @@ export class SoundManager {
       gain.cancelScheduledValues(t);
       gain.setValueAtTime(0.8, t);
       gain.linearRampToValueAtTime(0.18, t + 0.035);
-      gain.setValueAtTime(0.18, t + 0.85);
-      gain.linearRampToValueAtTime(0.8, t + 1.3);
+      gain.setValueAtTime(0.18, t + 3);
+      gain.linearRampToValueAtTime(0.8, t + 3.4);
     }
-    this.playTimeoutScream(1.1);
+    if (!this.recordedAudio?.playScream()) this.playTimeoutScream(1.1);
   }
 
   playTimeoutScream(duration = 3) {
     if (!this.ctx || this.isMuted || duration <= 0) return;
+    if (this.recordedAudio?.playScream(duration)) return;
     const t = this.ctx.currentTime;
     const voice = this.ctx.createOscillator();
     const vibrato = this.ctx.createOscillator();
