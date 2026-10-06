@@ -16,7 +16,7 @@ export class Room {
   buildArchitecture() {
     const { diffuse: floorDiffuse, bump: floorBump, roughness: floorRoughness } = this.tf.createWoodFloor();
     const { diffuse: wallDiffuse, bump: wallBump, roughness: wallRoughness } = this.tf.createWallTexture();
-    const ceilingTexture = this.tf.createWoodPlankTexture('#1f150e');
+    const ceilingTexture = this.tf.createConcreteTexture();
     ceilingTexture.repeat.set(4, 8);
 
     // Floor Materials with PBR Roughness (Wet ink puddles glisten, worn walkways are matte)
@@ -134,13 +134,36 @@ export class Room {
     this.scene.add(corridorRightWall);
     this.addColliderBox(new THREE.Vector3(2.0, 2.15, -10), new THREE.Vector3(0.4, 4.3, 12));
 
-    // End Wall of Corridor (Z = -16, X: -1.8 to 1.8)
-    const corridorEndGeo = new THREE.PlaneGeometry(3.6, 4.3);
-    const corridorEndWall = new THREE.Mesh(corridorEndGeo, wallMaterial);
-    corridorEndWall.position.set(0, 2.15, -16);
-    corridorEndWall.receiveShadow = true;
-    this.scene.add(corridorEndWall);
-    this.addColliderBox(new THREE.Vector3(0, 2.15, -16.2), new THREE.Vector3(3.6, 4.3, 0.4));
+    // A doorway and a recessed landing, rather than a solid wall behind the leaves.
+    for (const x of [-1.34, 1.34]) {
+      const wall = new THREE.Mesh(new THREE.PlaneGeometry(0.92, 4.3), wallMaterial);
+      wall.position.set(x, 2.15, -16);
+      this.scene.add(wall);
+      this.addColliderBox(new THREE.Vector3(x, 2.15, -16.1), new THREE.Vector3(0.92, 4.3, 0.2));
+    }
+    const lintel = new THREE.Mesh(new THREE.PlaneGeometry(1.76, 1.45), wallMaterial);
+    lintel.position.set(0, 3.575, -16);
+    this.scene.add(lintel);
+    const landing = new THREE.Mesh(new THREE.PlaneGeometry(1.76, 2.4), floorMaterial);
+    landing.rotation.x = -Math.PI / 2;
+    landing.position.set(0, 0, -17.2);
+    this.scene.add(landing);
+    const landingCeiling = new THREE.Mesh(new THREE.PlaneGeometry(1.76, 2.4), ceilingMaterial);
+    landingCeiling.rotation.x = Math.PI / 2;
+    landingCeiling.position.set(0, 2.85, -17.2);
+    this.scene.add(landingCeiling);
+    for (const x of [-0.88, 0.88]) {
+      const wall = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.85), wallMaterial);
+      wall.rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2;
+      wall.position.set(x, 1.425, -17.2);
+      this.scene.add(wall);
+      this.addColliderBox(new THREE.Vector3(x, 1.425, -17.2), new THREE.Vector3(0.1, 2.85, 2.4));
+    }
+    const endWall = new THREE.Mesh(new THREE.PlaneGeometry(1.76, 2.85), wallMaterial);
+    endWall.position.set(0, 1.425, -18.4);
+    this.scene.add(endWall);
+    this.addColliderBox(new THREE.Vector3(0, 1.425, -18.45), new THREE.Vector3(1.76, 2.85, 0.1));
+
   }
 
   buildBeamsAndPillars() {
@@ -202,6 +225,26 @@ export class Room {
     this.scene.add(rightBB);
   }
 
+  openDoor() {
+    if (this.doorOpening) return false;
+    this.doorOpening = true;
+    this.doorLockParts.forEach(part => { part.visible = false; });
+    this.doorMesh.userData.description = '자물쇠가 풀려 철문이 열렸다. 문 너머로 인쇄소의 어두운 공간이 드러난다.';
+    return true;
+  }
+
+  updateDoor(delta) {
+    if (!this.doorOpening || this.doorOpenProgress >= 1) return;
+    this.doorOpenProgress = Math.min(1, this.doorOpenProgress + delta / 2.8);
+    const t = this.doorOpenProgress;
+    const angle = t * t * (3 - 2 * t) * Math.PI / 2;
+    this.doorPivots[0].rotation.y = angle;
+    this.doorPivots[1].rotation.y = -angle;
+    if (t === 1) {
+      this.colliders = this.colliders.filter(box => box !== this.closedDoorCollider);
+    }
+  }
+
   buildCorridorDoor() {
     // Heavy wooden iron-reinforced double door at the end of the deep corridor
     const doorGroup = new THREE.Group();
@@ -217,53 +260,47 @@ export class Room {
       roughness: 0.4,
     });
 
-    // Door Frame
-    const frameGeo = new THREE.BoxGeometry(2.0, 3.0, 0.15);
-    const frame = new THREE.Mesh(frameGeo, woodMat);
-    frame.position.set(0, 1.5, 0);
-    doorGroup.add(frame);
-
-    // Left and Right door leaves
-    const leafGeo = new THREE.BoxGeometry(0.85, 2.7, 0.08);
-    const leftLeaf = new THREE.Mesh(leafGeo, woodMat);
-    leftLeaf.position.set(-0.45, 1.45, 0.04);
-    leftLeaf.castShadow = true;
-    doorGroup.add(leftLeaf);
-
-    const rightLeaf = new THREE.Mesh(leafGeo, woodMat);
-    rightLeaf.position.set(0.45, 1.45, 0.04);
-    rightLeaf.castShadow = true;
-    doorGroup.add(rightLeaf);
-
-    // Horizontal Iron Straps / Reinforcements
-    const strapY = [0.6, 1.4, 2.2];
-    strapY.forEach(sy => {
-      const strapGeo = new THREE.BoxGeometry(1.8, 0.08, 0.02);
-      const strap = new THREE.Mesh(strapGeo, ironMat);
-      strap.position.set(0, sy, 0.09);
-      doorGroup.add(strap);
-
-      // Iron Rivet studs
-      for (let rx = -0.8; rx <= 0.8; rx += 0.25) {
-        const rivetGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.02, 8);
-        const rivet = new THREE.Mesh(rivetGeo, ironMat);
-        rivet.rotation.x = Math.PI / 2;
-        rivet.position.set(rx, sy, 0.1);
-        doorGroup.add(rivet);
+    // Frame posts leave the central opening clear.
+    for (const x of [-0.95, 0.95]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3, 0.15), woodMat);
+      post.position.set(x, 1.5, 0);
+      doorGroup.add(post);
+    }
+    const top = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.15, 0.15), woodMat);
+    top.position.set(0, 2.95, 0);
+    doorGroup.add(top);
+    this.doorPivots = [];
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.875, 0, 0.04);
+      const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.875, 2.7, 0.08), woodMat);
+      leaf.position.set(-side * 0.4375, 1.45, 0);
+      leaf.castShadow = true;
+      pivot.add(leaf);
+      for (const y of [0.6, 1.4, 2.2]) {
+        const strap = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.08, 0.02), ironMat);
+        strap.position.set(-side * 0.4375, y, 0.05);
+        pivot.add(strap);
+        for (const offset of [0.12, 0.36, 0.62, 0.78]) {
+          const rivet = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.02, 8), ironMat);
+          rivet.rotation.x = Math.PI / 2;
+          rivet.position.set(-side * offset, y, 0.06);
+          pivot.add(rivet);
+        }
       }
-    });
-
-    // Heavy iron cross-bar padlock latch
-    const barGeo = new THREE.BoxGeometry(0.9, 0.1, 0.05);
-    const lockBar = new THREE.Mesh(barGeo, ironMat);
+      doorGroup.add(pivot);
+      this.doorPivots.push(pivot);
+    }
+    const lockBar = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.1, 0.05), ironMat);
     lockBar.position.set(0, 1.4, 0.12);
     doorGroup.add(lockBar);
-
-    // Old padlock
-    const lockBodyGeo = new THREE.BoxGeometry(0.12, 0.15, 0.04);
-    const padlock = new THREE.Mesh(lockBodyGeo, ironMat);
+    const padlock = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, 0.04), ironMat);
     padlock.position.set(0.1, 1.35, 0.16);
     doorGroup.add(padlock);
+    this.doorLockParts = [lockBar, padlock];
+    this.doorOpenProgress = 0;
+    this.addColliderBox(new THREE.Vector3(0, 1.45, -15.88), new THREE.Vector3(1.75, 2.7, 0.12));
+    this.closedDoorCollider = this.colliders[this.colliders.length - 1];
 
     // Wooden sign above door: "地下 活版 輪轉機室 (Underground Rotary Press Room)"
     const signCanvas = document.createElement('canvas');
@@ -363,25 +400,25 @@ export class Room {
 
     [-2.2, 2.2].forEach(wx => {
       const winGroup = new THREE.Group();
-      winGroup.position.set(wx, 2.6, 5.92);
+      winGroup.position.set(wx, 3.75, 5.92);
 
       // Glass plane
-      const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.0), winMat);
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.55), winMat);
       glass.rotation.y = Math.PI;
       winGroup.add(glass);
 
       // Wooden Window Frame Grid (4x4 colonial window panes)
-      const frameOuter = new THREE.Mesh(new THREE.BoxGeometry(1.7, 2.1, 0.08), frameMat);
+      const frameOuter = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.65, 0.08), frameMat);
       winGroup.add(frameOuter);
 
       // Horizontal and vertical grid bars
-      for (let gy = -0.5; gy <= 0.5; gy += 0.5) {
+      for (let gy = -0.2; gy <= 0.2; gy += 0.4) {
         const barH = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.04, 0.04), frameMat);
         barH.position.set(0, gy, -0.02);
         winGroup.add(barH);
       }
       for (let gx = -0.4; gx <= 0.4; gx += 0.4) {
-        const barV = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.0, 0.04), frameMat);
+        const barV = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.55, 0.04), frameMat);
         barV.position.set(gx, 0, -0.02);
         winGroup.add(barV);
       }

@@ -15,6 +15,20 @@ export class Props {
   }
 
   // 1. Vintage 1930s Octagonal Pendulum Wall Clock (1930년대 괘종시계)
+  setCountdown(text) {
+    if (this.countdownText === text) return;
+    this.countdownText = text;
+    const ctx = this.countdownCanvas.getContext('2d');
+    ctx.fillStyle = '#160806';
+    ctx.fillRect(0, 0, 256, 96);
+    ctx.fillStyle = '#ff6655';
+    ctx.font = 'bold 58px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 48);
+    this.countdownTexture.needsUpdate = true;
+  }
+
   buildClock() {
     const clockGroup = new THREE.Group();
     // Mounted on right back partition pillar / wall at (X = 2.4, Y = 2.5, Z = -3.88)
@@ -98,6 +112,18 @@ export class Props {
     pendulumPivot.add(bob);
 
     clockGroup.add(pendulumPivot);
+
+    // Countdown plaque; the stopped hands remain readable as the original puzzle clue.
+    this.countdownCanvas = document.createElement('canvas');
+    this.countdownCanvas.width = 256;
+    this.countdownCanvas.height = 96;
+    this.countdownTexture = new THREE.CanvasTexture(this.countdownCanvas);
+    const countdown = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.44, 0.165),
+      new THREE.MeshBasicMaterial({ map: this.countdownTexture })
+    );
+    countdown.position.set(0, -0.78, 0.09);
+    clockGroup.add(countdown);
 
     // Interactive data
     clockGroup.userData = {

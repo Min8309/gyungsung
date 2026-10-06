@@ -671,7 +671,7 @@ export class InspectViewRenderer {
           </div>
           <div style="font-size: 14px; color: ${isUnlocked ? '#55ff77' : '#b89f82'}; line-height: 1.6;">
             ${isUnlocked 
-              ? '✓ 육중한 쇠빗장과 자물쇠가 풀렸습니다! 문틈 너머로 윤전기의 묵직한 진동이 울려 퍼집니다.' 
+              ? '✓ 쇠빗장이 풀리고 철문이 열렸습니다! 문틈 너머로 윤전기의 묵직한 진동이 울려 퍼집니다.'
               : (!isSludgeCleared
                   ? '자물쇠 구멍이 굳은 핏덩이와 잉크 슬러지로 막혀 있어 일반 열쇠가 들어가지 않습니다! 세척액(벤젠)으로 닦아내야 합니다.'
                   : (hasKey 
@@ -701,9 +701,11 @@ export class InspectViewRenderer {
       unlockBtn.className = 'inspect-action-btn';
       unlockBtn.textContent = '🗝️ 머리카락 엉킨 열쇠로 자물쇠 풀기 (회전)';
       unlockBtn.addEventListener('click', () => {
+        if (gameState.doorUnlocked || !gameState.hasItem('rusty_key')) return;
         gameState.doorUnlocked = true;
-        if (this.soundManager) this.soundManager.playDrawerUnlock();
+        gameState.recordProgress();
         this.renderDoorView();
+        window.dispatchEvent(new Event('door-unlocked'));
       });
       this.actionBar.appendChild(unlockBtn);
     }

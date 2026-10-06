@@ -49,7 +49,7 @@ export class InteractionManager {
     }
 
     if (this.promptEl) {
-      this.promptEl.style.cursor = 'pointer';
+      this.promptEl.style.cursor = 'var(--inspect-cursor)';
       this.promptEl.addEventListener('click', () => {
         if (this.currentInteractable && !this.isInspecting) {
           this.triggerInspect(this.currentInteractable);
@@ -98,6 +98,7 @@ export class InteractionManager {
   setPrompt(data) {
     if (!this.promptEl || !this.crosshairEl) return;
 
+    this.promptEl.style.pointerEvents = data ? 'auto' : 'none';
     if (data) {
       this.crosshairEl.classList.add('interactable');
       this.promptEl.style.opacity = '1';

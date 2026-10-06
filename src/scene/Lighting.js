@@ -18,7 +18,7 @@ export class Lighting {
 
   buildAmbientLight() {
     // Very dim, deep midnight blue-gray ambient light so unlit corners stay dark and creepy
-    this.ambientLight = new THREE.AmbientLight(0x0c0907, 0.4);
+    this.ambientLight = new THREE.AmbientLight(0x162521, 0.22);
     this.scene.add(this.ambientLight);
   }
 
@@ -58,7 +58,7 @@ export class Lighting {
 
     // Glowing Edison Light Bulb (백열전구 구체)
     const bulbMat = new THREE.MeshBasicMaterial({
-      color: 0xffeedd,
+      color: 0xc4d5c8,
     });
     const bulbGeo = new THREE.SphereGeometry(0.05, 16, 16);
     this.bulbMesh = new THREE.Mesh(bulbGeo, bulbMat);
@@ -67,7 +67,7 @@ export class Lighting {
 
     // Filament glow halo
     const glowMat = new THREE.MeshBasicMaterial({
-      color: 0xffaa44,
+      color: 0x8da69b,
       transparent: true,
       opacity: 0.6,
     });
@@ -76,7 +76,7 @@ export class Lighting {
     this.lampHead.add(glowSphere);
 
     // Dynamic PointLight (핵심 조명)
-    this.mainPointLight = new THREE.PointLight(0xffa844, 45, 14, 2);
+    this.mainPointLight = new THREE.PointLight(0xb9cebf, 12, 10, 2);
     this.mainPointLight.position.set(0, -0.1, 0);
     this.mainPointLight.castShadow = true;
     this.mainPointLight.shadow.mapSize.width = 1024;
@@ -91,13 +91,13 @@ export class Lighting {
   }
 
   buildVolumetricLightCone() {
-    // Air kept clear without dusty haze per request
+    // Keep the flashlight and clues readable without a bright haze
     this.volumetricCone = null;
   }
 
   buildCorridorLamp() {
-    // Secondary faint reddish-amber light down the long back corridor (Z = -10.5)
-    this.corridorLight = new THREE.PointLight(0xd46830, 20, 10, 2);
+    // Secondary cold, dim light down the long back corridor (Z = -10.5)
+    this.corridorLight = new THREE.PointLight(0x8fafae, 5, 8, 2);
     this.corridorLight.position.set(0, 3.2, -10.5);
     this.corridorLight.castShadow = true;
     this.corridorLight.shadow.mapSize.width = 512;
@@ -106,7 +106,7 @@ export class Lighting {
     this.scene.add(this.corridorLight);
 
     // Bare bulb mesh for corridor
-    const cBulbMat = new THREE.MeshBasicMaterial({ color: 0xff7733 });
+    const cBulbMat = new THREE.MeshBasicMaterial({ color: 0xb8d5d2 });
     const cBulb = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 12), cBulbMat);
     cBulb.position.set(0, 3.2, -10.5);
     this.scene.add(cBulb);
@@ -114,7 +114,7 @@ export class Lighting {
 
   buildFlashlight() {
     // Player's handheld flashlight
-    this.flashlight = new THREE.SpotLight(0xfcf6e6, 32, 18, 0.42, 0.55, 1.8);
+    this.flashlight = new THREE.SpotLight(0xdae7df, 24, 16, 0.42, 0.55, 1.8);
     this.flashlight.position.set(0.18, -0.15, -0.1);
     this.flashlight.castShadow = true;
     this.flashlight.shadow.mapSize.width = 1024;
@@ -174,19 +174,19 @@ export class Lighting {
       this.flickerDuration -= delta;
       if (this.flickerDuration <= 0) {
         this.isFlickering = false;
-        this.mainPointLight.intensity = 45;
-        this.bulbMesh.material.color.setHex(0xffeedd);
+        this.mainPointLight.intensity = 12;
+        this.bulbMesh.material.color.setHex(0xc4d5c8);
         if (this.volumetricCone) this.volumetricCone.material.opacity = 0.045;
       } else {
         // High frequency erratic voltage drop
         const dimFactor = Math.random() > 0.4 ? 0.15 : 0.85;
-        this.mainPointLight.intensity = 45 * dimFactor;
-        this.bulbMesh.material.color.setHex(dimFactor < 0.3 ? 0x442211 : 0xffeedd);
+        this.mainPointLight.intensity = 12 * dimFactor;
+        this.bulbMesh.material.color.setHex(dimFactor < 0.3 ? 0x442211 : 0xc4d5c8);
         if (this.volumetricCone) this.volumetricCone.material.opacity = 0.045 * dimFactor;
       }
     }
 
     // Corridor light subtle breathing
-    this.corridorLight.intensity = 20 + Math.sin(time * 2.1) * 3;
+    this.corridorLight.intensity = 5 + Math.sin(time * 2.1) * 0.8;
   }
 }

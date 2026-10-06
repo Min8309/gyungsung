@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { BasementAtmosphere } from './scene/BasementAtmosphere.js';
+import { GhostEncounters } from './systems/GhostEncounters.js';
+import { PlayTimer } from './systems/PlayTimer.js';
 import { ExplorationHUD } from './ui/ExplorationHUD.js';
 import { TextureFactory } from './scene/TextureFactory.js';
 import { Room } from './scene/Room.js';
@@ -34,6 +37,14 @@ class HorrorSpaceApp {
 
     this.initScene();
     this.initModules();
+    this.playTimer = new PlayTimer({
+      controls: this.playerControls.controls,
+      soundManager: this.soundManager,
+      props: this.props,
+      onEnd: () => { this.gameEnded = true; }
+    });
+    new BasementAtmosphere(this.scene);
+    this.ghostEncounters = new GhostEncounters(this.scene, this.camera, this.soundManager, this.lighting);
     this.initUIEvents();
     this.explorationHUD = new ExplorationHUD(this.playerControls.controls);
     this.animate();
@@ -47,13 +58,13 @@ class HorrorSpaceApp {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 0.9;
     this.container.appendChild(this.renderer.domElement);
 
     // 2. Scene with Dark Atmosphere Fog
     this.scene = new THREE.Scene();
-    // Warm, dark brownish-black fog that absorbs light into the deep corridor
-    this.scene.fog = new THREE.FogExp2(0x0c0806, 0.05);
+    // Cold damp basement fog swallows the distant corridor
+    this.scene.fog = new THREE.FogExp2(0x040b0b, 0.075);
 
     // 3. Perspective Camera
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 80);
@@ -187,6 +198,12 @@ class HorrorSpaceApp {
   }
 
   initUIEvents() {
+    window.addEventListener('door-unlocked', () => {
+      if (this.gameEnded || !this.room.openDoor()) return;
+      this.soundManager.playMetalDoorOpen();
+      // Return to the scene so the player sees the leaves swing open.
+      this.interactionManager.closeInspect();
+    });
     // Click on start screen to engage pointer lock and audio
     this.startScreen.addEventListener('click', () => {
       this.soundManager.ensureContext();
@@ -199,6 +216,7 @@ class HorrorSpaceApp {
     });
 
     this.playerControls.controls.addEventListener('unlock', () => {
+      if (this.gameEnded) return;
       const isModalOpen = this.interactionManager.isInspecting || 
                           this.notebookUI.isOpen || 
                           (this.rewardCardRenderer.modalEl && this.rewardCardRenderer.modalEl.classList.contains('active'));
@@ -230,6 +248,7 @@ class HorrorSpaceApp {
   }
 
   animate() {
+    if (this.gameEnded) return;
     requestAnimationFrame(() => this.animate());
 
     const now = performance.now();
@@ -245,6 +264,7 @@ class HorrorSpaceApp {
 
     // 3. Update Props (Swinging pendulum, clock tick sync, eye tracking)
     this.props.update(time, delta, this.soundManager, this.camera);
+    this.room.updateDoor(delta);
 
     // 4. Update Lighting (Bulb sway, flicker buzz)
     this.lighting.update(time, delta, this.soundManager);
@@ -255,6 +275,10 @@ class HorrorSpaceApp {
 
     // 6. Update 4-Layer Hint System (Emissive rimlight pulse & auto-hint timer)
     this.hintSystem.update(time, delta);
+
+    this.ghostEncounters.update(now,
+      this.playerControls.controls.isLocked && !this.playTimer.finalizing,
+      this.playTimer.startedAt === null ? 0 : (now - this.playTimer.startedAt) / 1000);
 
     // 7. Render Scene
     this.renderer.render(this.scene, this.camera);

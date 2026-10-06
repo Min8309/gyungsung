@@ -310,6 +310,31 @@ export class TextureFactory {
   }
 
   // 3. Walls: Upper Aged Yellowed Plaster with Inky Handprints & Notices + Lower Scuffed Wood Paneling
+  createConcreteTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#333e39';
+    ctx.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 12000; i++) {
+      const shade = 20 + Math.floor(Math.random() * 45);
+      ctx.fillStyle = `rgba(${shade},${shade + 7},${shade + 3},0.3)`;
+      ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+    }
+    ctx.strokeStyle = '#17231e';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 12; i++) {
+      let x = Math.random() * 512, y = Math.random() * 512;
+      ctx.beginPath(); ctx.moveTo(x, y);
+      for (let j = 0; j < 8; j++) { x += Math.random() * 35 - 15; y += 10; ctx.lineTo(x, y); }
+      ctx.stroke();
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(4, 4);
+    return texture;
+  }
+
   createWallTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
@@ -326,8 +351,8 @@ export class TextureFactory {
     bCanvas.height = 1024;
     const bCtx = bCanvas.getContext('2d');
 
-    // Upper 60%: Warm, aged, yellowish-sepia plaster with heavy discoloration
-    ctx.fillStyle = '#6e5f4c';
+    // Upper 60%: Cold, damp basement plaster with heavy discoloration
+    ctx.fillStyle = '#414e48';
     ctx.fillRect(0, 0, 1024, 600);
 
     rCtx.fillStyle = '#d0d0d0'; // Plaster is matte
@@ -340,7 +365,7 @@ export class TextureFactory {
     for (let i = 0; i < 9000; i++) {
       const px = Math.random() * 1024;
       const py = Math.random() * 600;
-      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(40, 32, 22, 0.16)' : 'rgba(110, 95, 78, 0.12)';
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(15, 28, 24, 0.24)' : 'rgba(76, 89, 79, 0.12)';
       ctx.fillRect(px, py, 2 + Math.random() * 4, 2 + Math.random() * 4);
     }
 
@@ -515,6 +540,19 @@ export class TextureFactory {
       ctx.beginPath();
       ctx.arc(ix, iy, 2 + Math.random() * 6, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // Damp tide marks and mold, especially where the walls meet the ceiling.
+    for (let i = 0; i < 95; i++) {
+      const x = Math.random() * 1024;
+      const y = Math.random() * 560;
+      const stain = ctx.createRadialGradient(x, y, 0, x, y, 24 + Math.random() * 55);
+      stain.addColorStop(0, 'rgba(8, 24, 18, 0.35)');
+      stain.addColorStop(1, 'rgba(8, 24, 18, 0)');
+      ctx.fillStyle = stain;
+      ctx.fillRect(x - 85, y - 85, 170, 170);
+      rCtx.fillStyle = '#606060';
+      rCtx.fillRect(x, y, 4, 100 + Math.random() * 150);
     }
 
     const diffuse = new THREE.CanvasTexture(canvas);

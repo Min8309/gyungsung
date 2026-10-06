@@ -493,6 +493,63 @@ export class SoundManager {
     osc.stop(t + 1.3);
   }
 
+  playMetalDoorOpen() {
+    if (!this.ctx || this.isMuted) return;
+    const t = this.ctx.currentTime;
+    // Dissonant resonances with a slow pitch fall evoke a heavy rusted hinge.
+    [113, 281, 467, 793].forEach((frequency, index) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = index === 0 ? 'triangle' : 'sawtooth';
+      osc.frequency.setValueAtTime(frequency, t);
+      osc.frequency.exponentialRampToValueAtTime(frequency * 0.55, t + 2.8);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.08 / (index + 1), t + 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 3.2);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(t);
+      osc.stop(t + 3.3);
+      osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+    });
+    this.playDrawerUnlock();
+  }
+
+  playTimeoutScream(duration = 3) {
+    if (!this.ctx || this.isMuted || duration <= 0) return;
+    const t = this.ctx.currentTime;
+    const voice = this.ctx.createOscillator();
+    const vibrato = this.ctx.createOscillator();
+    const depth = this.ctx.createGain();
+    const envelope = this.ctx.createGain();
+    const formant = this.ctx.createBiquadFilter();
+    voice.type = 'sawtooth';
+    voice.frequency.setValueAtTime(480, t);
+    voice.frequency.exponentialRampToValueAtTime(1050, t + duration * 0.3);
+    voice.frequency.exponentialRampToValueAtTime(260, t + duration);
+    vibrato.frequency.value = 35;
+    depth.gain.value = 65;
+    vibrato.connect(depth);
+    depth.connect(voice.frequency);
+    formant.type = 'bandpass';
+    formant.frequency.value = 1600;
+    formant.Q.value = 0.9;
+    envelope.gain.setValueAtTime(0, t);
+    envelope.gain.linearRampToValueAtTime(0.35, t + Math.min(0.08, duration / 4));
+    envelope.gain.linearRampToValueAtTime(0, t + duration);
+    voice.connect(formant);
+    formant.connect(envelope);
+    envelope.connect(this.masterGain);
+    voice.start(t);
+    vibrato.start(t);
+    voice.stop(t + duration);
+    vibrato.stop(t + duration);
+    voice.onended = () => {
+      voice.disconnect(); vibrato.disconnect(); depth.disconnect();
+      formant.disconnect(); envelope.disconnect();
+    };
+  }
+
   toggleMute() {
     this.isMuted = !this.isMuted;
     if (this.masterGain) {
