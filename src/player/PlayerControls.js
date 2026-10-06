@@ -224,10 +224,6 @@ export class PlayerControls {
         if (this.soundManager) {
           this.soundManager.playFootstep(this.isSprinting);
 
-          // 7% chance of a loose floorboard creak
-          if (Math.random() < 0.07) {
-            this.soundManager.playFloorboardCreak();
-          }
         }
       }
       this.lastFootstepBob = sinVal;

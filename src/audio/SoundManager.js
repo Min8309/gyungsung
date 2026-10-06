@@ -345,16 +345,16 @@ export class SoundManager {
     osc2.stop(t + 0.65);
   }
 
-  // 3. Wooden Floor Footsteps
+  // 3. Dusty concrete footsteps
   playFootstep(isSprinting = false) {
     if (!this.ctx || this.isMuted) return;
 
     const t = this.ctx.currentTime;
 
-    // Low wooden body thud
+    // Short shoe impact on solid concrete
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    const pitch = 90 + Math.random() * 30;
+    const pitch = 145 + Math.random() * 35;
     osc.type = 'sine';
     osc.frequency.setValueAtTime(pitch, t);
     osc.frequency.exponentialRampToValueAtTime(30, t + 0.08);
@@ -368,7 +368,7 @@ export class SoundManager {
     osc.start(t);
     osc.stop(t + 0.1);
 
-    // Subtle wooden surface scuff/creak noise
+    // Dry grit scuff on the concrete surface
     const noiseBuffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.06, this.ctx.sampleRate);
     const output = noiseBuffer.getChannelData(0);
     for (let i = 0; i < noiseBuffer.length; i++) {
@@ -379,7 +379,7 @@ export class SoundManager {
 
     const noiseFilter = this.ctx.createBiquadFilter();
     noiseFilter.type = 'bandpass';
-    noiseFilter.frequency.setValueAtTime(600 + Math.random() * 400, t);
+    noiseFilter.frequency.setValueAtTime(1300 + Math.random() * 700, t);
     noiseFilter.Q.setValueAtTime(3, t);
 
     const noiseGain = this.ctx.createGain();

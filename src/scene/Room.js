@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createConcreteMaterial, seededRandom } from './ConcreteSurfaces.js';
 
 export class Room {
   constructor(scene, textureFactory) {
@@ -14,36 +15,10 @@ export class Room {
   }
 
   buildArchitecture() {
-    const { diffuse: floorDiffuse, bump: floorBump, roughness: floorRoughness } = this.tf.createWoodFloor();
-    const { diffuse: wallDiffuse, bump: wallBump, roughness: wallRoughness } = this.tf.createWallTexture();
-    const ceilingTexture = this.tf.createConcreteTexture();
-    ceilingTexture.repeat.set(4, 8);
-
-    // Floor Materials with PBR Roughness (Wet ink puddles glisten, worn walkways are matte)
-    const floorMaterial = new THREE.MeshStandardMaterial({
-      map: floorDiffuse,
-      bumpMap: floorBump,
-      bumpScale: 0.08,
-      roughnessMap: floorRoughness,
-      roughness: 0.85,
-      metalness: 0.08,
-    });
-
-    // Walls with stained plaster, inky handprints, and kick-scuffed wainscoting
-    const wallMaterial = new THREE.MeshStandardMaterial({
-      map: wallDiffuse,
-      bumpMap: wallBump,
-      bumpScale: 0.04,
-      roughnessMap: wallRoughness,
-      roughness: 0.9,
-      metalness: 0.04,
-    });
-
-    const ceilingMaterial = new THREE.MeshStandardMaterial({
-      map: ceilingTexture,
-      roughness: 0.9,
-      metalness: 0.05,
-    });
+    // Placeholders identify each face; unique non-tiling concrete maps are assigned below.
+    const floorMaterial = new THREE.MeshStandardMaterial();
+    const wallMaterial = new THREE.MeshStandardMaterial();
+    const ceilingMaterial = new THREE.MeshStandardMaterial();
 
     // 1. Main Room Floor (10m x 10m: X: -5 to 5, Z: -4 to 6)
     const mainFloorGeo = new THREE.PlaneGeometry(10, 10);
@@ -164,13 +139,23 @@ export class Room {
     this.scene.add(endWall);
     this.addColliderBox(new THREE.Vector3(0, 1.425, -18.45), new THREE.Vector3(1.76, 2.85, 0.1));
 
+    let surfaceSeed = 19341024;
+    for (const mesh of this.scene.children) {
+      const kind = mesh.material === floorMaterial ? 'floor'
+        : mesh.material === wallMaterial ? 'wall'
+        : mesh.material === ceilingMaterial ? 'ceiling' : null;
+      if (!kind) continue;
+      const { width, height } = mesh.geometry.parameters;
+      mesh.material = createConcreteMaterial(width, height, surfaceSeed++, kind);
+      mesh.name = mesh.material.name;
+      mesh.receiveShadow = true;
+    }
+    floorMaterial.dispose(); wallMaterial.dispose(); ceilingMaterial.dispose();
+
   }
 
   buildBeamsAndPillars() {
-    const beamMat = new THREE.MeshStandardMaterial({
-      map: this.tf.createWoodPlankTexture('#1b110a'),
-      roughness: 0.85,
-    });
+    const beamMat = createConcreteMaterial(4.3, 0.4, 19341101, 'ceiling');
 
     // Horizontal ceiling cross-beams in main room
     const beamPositionsZ = [4.5, 1.5, -1.5, -4];
@@ -194,7 +179,7 @@ export class Room {
       this.scene.add(cBeam);
     });
 
-    // Wooden structural corner pillars
+    // Concrete structural corner pillars
     const pillarPositions = [
       [-4.9, 1], [-4.9, 5.9], [4.9, 1], [4.9, 5.9],
       [-1.75, -4.05], [1.75, -4.05], [-1.75, -15.9], [1.75, -15.9]
@@ -211,7 +196,7 @@ export class Room {
 
     // Baseboards along walls
     const baseboardMat = new THREE.MeshStandardMaterial({
-      color: 0x160f0a,
+      color: 0x262d27,
       roughness: 0.7,
     });
     // Left & Right baseboards
@@ -485,126 +470,24 @@ export class Room {
     ragMesh.receiveShadow = true;
     this.scene.add(ragMesh);
 
-    // 3. 3D Broken, Collapsed & Dilapidated Floor Section (레퍼런스 이미지처럼 부서지고 꺼진 널빤지와 바닥 구멍)
     this.buildBrokenFloorFeature();
   }
 
   buildBrokenFloorFeature() {
-    const brokenGroup = new THREE.Group();
-
-    const woodPlankMat = new THREE.MeshStandardMaterial({
-      map: this.tf.createWoodPlankTexture('#3a2c20'),
-      roughness: 0.85,
-      metalness: 0.05
-    });
-
-    const darkUnderfloorMat = new THREE.MeshStandardMaterial({
-      color: 0x050403,
-      roughness: 0.95,
-      metalness: 0.0
-    });
-
-    const beamMat = new THREE.MeshStandardMaterial({
-      map: this.tf.createWoodPlankTexture('#20150d'),
-      roughness: 0.9
-    });
-
-    // A. Main Broken Floor Hole in Corridor Walkway (Z: -4.5 to -7.0, X: -0.65 to 0.65)
-    // Dark recessed subfloor cavity (바닥 아래 깊은 구멍)
-    const pitGeo = new THREE.BoxGeometry(1.35, 0.25, 2.5);
-    const pit = new THREE.Mesh(pitGeo, darkUnderfloorMat);
-    pit.position.set(0, -0.13, -5.75);
-    brokenGroup.add(pit);
-
-    // Structural subfloor joist beams spanning across the hole (바닥 아래 노출된 장선 멍에)
-    const joistZ = [-4.9, -5.75, -6.6];
-    joistZ.forEach(jz => {
-      const joistGeo = new THREE.BoxGeometry(1.38, 0.12, 0.12);
-      const joist = new THREE.Mesh(joistGeo, beamMat);
-      joist.position.set(0, -0.06, jz);
-      joist.castShadow = true;
-      joist.receiveShadow = true;
-      brokenGroup.add(joist);
-    });
-
-    // B. Real 3D Snapped, Tilted, Lifted & Warped Floorboards (부서지고 기울어진 널빤지들)
-    // Plank 1: Left broken board tilted down into the hole
-    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.035, 1.4), woodPlankMat);
-    p1.position.set(-0.4, -0.04, -5.2);
-    p1.rotation.set(0.12, 0.03, -0.05);
-    p1.castShadow = true;
-    p1.receiveShadow = true;
-    brokenGroup.add(p1);
-
-    // Plank 2: Broken board snapped in half, resting diagonally on a joist
-    const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.035, 1.1), woodPlankMat);
-    p2.position.set(0.12, -0.07, -5.9);
-    p2.rotation.set(-0.14, -0.08, 0.06);
-    p2.castShadow = true;
-    p2.receiveShadow = true;
-    brokenGroup.add(p2);
-
-    // Plank 3: Lifted warped board protruding slightly above floor level
-    const p3 = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.035, 1.3), woodPlankMat);
-    p3.position.set(0.38, 0.02, -4.9);
-    p3.rotation.set(-0.06, 0.04, 0.08);
-    p3.castShadow = true;
-    p3.receiveShadow = true;
-    brokenGroup.add(p3);
-
-    // Plank 4: Collapsed board resting near the bottom of the void
-    const p4 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.9), woodPlankMat);
-    p4.position.set(-0.15, -0.15, -6.3);
-    p4.rotation.set(0.04, 0.2, -0.04);
-    p4.castShadow = true;
-    p4.receiveShadow = true;
-    brokenGroup.add(p4);
-
-    // Plank 5: Short splintered jagged plank end
-    const p5 = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.035, 0.6), woodPlankMat);
-    p5.position.set(-0.35, -0.015, -6.6);
-    p5.rotation.set(-0.08, -0.02, -0.03);
-    p5.castShadow = true;
-    p5.receiveShadow = true;
-    brokenGroup.add(p5);
-
-    // C. Loose Splinters, Chips and Wood Shards Scattered Around Hole (부서진 나뭇조각 파편들)
-    const splinterMat = new THREE.MeshStandardMaterial({
-      color: 0x6e563d,
-      roughness: 0.9
-    });
-
-    const splinterCoords = [
-      [-0.55, -4.6, 0.18, 0.04, 0.5],
-      [0.5, -4.4, 0.22, 0.03, -0.3],
-      [-0.45, -6.9, 0.16, 0.04, 0.8],
-      [0.35, -6.8, 0.25, 0.05, -0.6],
-      [0.05, -4.55, 0.12, 0.03, 1.2],
-      [-0.2, -6.85, 0.14, 0.03, -1.0]
-    ];
-
-    splinterCoords.forEach(([sx, sz, sw, sl, srot]) => {
-      const sp = new THREE.Mesh(new THREE.BoxGeometry(sw, 0.015, sl), splinterMat);
-      sp.position.set(sx, 0.008, sz);
-      sp.rotation.y = srot;
-      sp.castShadow = true;
-      brokenGroup.add(sp);
-    });
-
-    // D. Second Damaged / Cracked Floor Section in Main Room (Near paper storage, X: -2.6, Z: 3.2)
-    const pSide1 = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.035, 1.6), woodPlankMat);
-    pSide1.position.set(-2.6, 0.018, 3.2);
-    pSide1.rotation.set(0.04, 0.02, 0.05);
-    pSide1.castShadow = true;
-    brokenGroup.add(pSide1);
-
-    const pSide2 = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.035, 1.2), woodPlankMat);
-    pSide2.position.set(-2.85, -0.015, 3.5);
-    pSide2.rotation.set(-0.06, -0.03, -0.04);
-    pSide2.castShadow = true;
-    brokenGroup.add(pSide2);
-
-    this.scene.add(brokenGroup);
+    // Spalled concrete and loose aggregate replace every exposed wooden floorboard.
+    const random = seededRandom(19341204);
+    const rubble = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.11, 0),
+      new THREE.MeshStandardMaterial({color:0x4b5047,roughness:1}), 75);
+    const transform = new THREE.Object3D();
+    for (let i=0;i<75;i++) {
+      const side=random()>0.5 ? 1 : -1;
+      transform.position.set(side*(1.05+random()*0.38),0.02,-4.5-random()*10.5);
+      transform.rotation.set(random()*3,random()*6,random()*3);
+      transform.scale.set(0.25+random()*0.85,0.15+random()*0.3,0.3+random()*0.9);
+      transform.updateMatrix();rubble.setMatrixAt(i,transform.matrix);
+    }
+    rubble.name='spalled-concrete-rubble';
+    this.scene.add(rubble);
   }
 
   addColliderBox(center, size) {
