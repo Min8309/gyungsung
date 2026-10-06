@@ -36,7 +36,7 @@ export class GhostEncounters {
     this.sprite.scale.set(...encounter.size, 1);
     this.material.opacity = 0;
     this.lighting.triggerFlicker();
-    this.soundManager.playTimeoutScream(0.8);
+    this.soundManager.playGhostScream();
     return true;
   }
 

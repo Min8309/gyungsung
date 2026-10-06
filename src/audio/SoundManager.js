@@ -1,3 +1,6 @@
+import * as THREE from 'three';
+import { startPrintShopAmbience } from './PrintShopAmbience.js';
+
 export class SoundManager {
   constructor() {
     this.ctx = null;
@@ -19,10 +22,11 @@ export class SoundManager {
 
       // Master Gain
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.7, this.ctx.currentTime);
       this.masterGain.connect(this.ctx.destination);
 
       this.startHorrorDrone();
+      this.ambience = startPrintShopAmbience(this.ctx, this.masterGain);
       this.initialized = true;
     } catch (e) {
       console.warn('Web Audio API not supported or blocked:', e);
@@ -83,7 +87,7 @@ export class SoundManager {
 
   // 2. Wall Clock Ticking (Synchronized with 3D pendulum)
   updateClockTick(sceneTime) {
-    if (!this.ctx || this.isMuted || this.clockStopped) return;
+    if (!this.ctx || this.isMuted || this.clockStopped || this.ambience) return;
 
     // Tick once every ~0.5 second (half-period of pendulum)
     if (sceneTime - this.lastTickTime >= 0.5) {
@@ -170,6 +174,7 @@ export class SoundManager {
 
   stopClockTick() {
     this.clockStopped = true;
+    this.ambience?.layers.clock.gain.gain.setValueAtTime(0, this.ctx.currentTime);
   }
 
   // Dial rotation tick
@@ -515,6 +520,20 @@ export class SoundManager {
     this.playDrawerUnlock();
   }
 
+  playGhostScream() {
+    if (!this.ctx || this.isMuted) return;
+    // Lower machinery briefly so the scream is distinct without increasing master volume.
+    if (this.ambience) {
+      const gain = this.ambience.bus.gain, t = this.ctx.currentTime;
+      gain.cancelScheduledValues(t);
+      gain.setValueAtTime(0.8, t);
+      gain.linearRampToValueAtTime(0.18, t + 0.035);
+      gain.setValueAtTime(0.18, t + 0.85);
+      gain.linearRampToValueAtTime(0.8, t + 1.3);
+    }
+    this.playTimeoutScream(1.1);
+  }
+
   playTimeoutScream(duration = 3) {
     if (!this.ctx || this.isMuted || duration <= 0) return;
     const t = this.ctx.currentTime;
@@ -527,16 +546,26 @@ export class SoundManager {
     voice.frequency.setValueAtTime(480, t);
     voice.frequency.exponentialRampToValueAtTime(1050, t + duration * 0.3);
     voice.frequency.exponentialRampToValueAtTime(260, t + duration);
-    vibrato.frequency.value = 35;
+    vibrato.frequency.value = 9;
     depth.gain.value = 65;
     vibrato.connect(depth);
     depth.connect(voice.frequency);
     formant.type = 'bandpass';
-    formant.frequency.value = 1600;
+    formant.frequency.setValueAtTime(900, t);
+    formant.frequency.linearRampToValueAtTime(1800, t + duration * 0.35);
+    formant.frequency.linearRampToValueAtTime(1100, t + duration);
     formant.Q.value = 0.9;
     envelope.gain.setValueAtTime(0, t);
     envelope.gain.linearRampToValueAtTime(0.35, t + Math.min(0.08, duration / 4));
     envelope.gain.linearRampToValueAtTime(0, t + duration);
+    const breath = this.ctx.createBufferSource();
+    const breathBuffer = this.ctx.createBuffer(1, Math.ceil(this.ctx.sampleRate * duration), this.ctx.sampleRate);
+    const breathData = breathBuffer.getChannelData(0);
+    for (let i = 0; i < breathData.length; i++) breathData[i] = (Math.random() * 2 - 1) * 0.16;
+    breath.buffer = breathBuffer;
+    breath.connect(formant);
+    breath.start(t);
+    breath.stop(t + duration);
     voice.connect(formant);
     formant.connect(envelope);
     envelope.connect(this.masterGain);
@@ -545,7 +574,7 @@ export class SoundManager {
     voice.stop(t + duration);
     vibrato.stop(t + duration);
     voice.onended = () => {
-      voice.disconnect(); vibrato.disconnect(); depth.disconnect();
+      breath.disconnect(); voice.disconnect(); vibrato.disconnect(); depth.disconnect();
       formant.disconnect(); envelope.disconnect();
     };
   }
