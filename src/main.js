@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ExplorationHUD } from './ui/ExplorationHUD.js';
 import { TextureFactory } from './scene/TextureFactory.js';
 import { Room } from './scene/Room.js';
 import { Furniture } from './scene/Furniture.js';
@@ -34,6 +35,7 @@ class HorrorSpaceApp {
     this.initScene();
     this.initModules();
     this.initUIEvents();
+    this.explorationHUD = new ExplorationHUD(this.playerControls.controls);
     this.animate();
   }
 

@@ -112,6 +112,7 @@ export const GameConfig = {
     proof_glasses: { id: 'clue_proof_glasses', puzzle: 'B', text: "붉은 글씨. '눈이 위를 보게 하라'." },
     cube: { id: 'clue_cube', puzzle: 'B', text: "눈이 그려진 활자 큐브. 한 면에만 눈이 있다." },
     slot: { id: 'clue_slot', puzzle: 'B', text: "큐브가 들어갈 빈 홈이 붉게 번쩍인다." },
+    proof_unreadable: { id: 'clue_proof_unreadable', puzzle: 'C', text: '책상 위 교정지를 발견했다. 글자가 번져 읽을 수 없다. 교정용 안경을 찾아보자.' },
     proof_title: { id: 'clue_proof_title', puzzle: 'C', text: "『활판실 식자공 의문의 실종 사건』. '식자공' 세 글자에 붉은 줄." },
     galley_slot: { id: 'clue_galley_slot', puzzle: 'C', text: "한 줄에 빈칸이 세 개. 노란 라벨이 붙어 있다." },
     rack_types: { id: 'clue_rack_types', puzzle: 'C', text: "노란 라벨이 붙은 칸에 활자 세 개: 식, 자, 공." },

@@ -39,7 +39,8 @@ export class InspectViewRenderer {
     const clueId = data.clueId || type;
 
     // 단서 조사 기록
-    gameState.markClueInspected(clueId);
+    gameState.markClueInspected(type === 'proof' || type === 'newspaper'
+      ? 'clue_proof_unreadable' : clueId);
 
     switch (type) {
       case 'calendar':

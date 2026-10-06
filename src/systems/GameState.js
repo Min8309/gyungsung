@@ -63,6 +63,7 @@ export class GameStateManager {
 
   // 단서 조사 기록 (● -> ○ 변경 및 수첩 기록)
   markClueInspected(clueId) {
+    if (['clue_proof_title', 'clue_proof_glasses'].includes(clueId) && !this.hasItem('round_glasses')) return;
     const isNew = !this.inspectedClues.has(clueId);
     this.inspectedClues.add(clueId);
 

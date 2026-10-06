@@ -10,7 +10,7 @@ export class InteractionManager {
     this.inspectViewRenderer = inspectViewRenderer;
 
     this.raycaster = new THREE.Raycaster();
-    this.raycaster.far = 3.2; // 3.2 meter interaction range
+    this.raycaster.far = 3.5; // 3.2 meter interaction range
     this.centerCoord = new THREE.Vector2(0, 0);
 
     this.currentInteractable = null;
@@ -65,26 +65,34 @@ export class InteractionManager {
     }
 
     // Raycast from camera center
-    this.raycaster.setFromCamera(this.centerCoord, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-
     let foundInteractable = null;
-
-    for (const hit of intersects) {
-      let obj = hit.object;
-      // Traverse upward to check if this mesh or any parent is interactable
-      while (obj && obj !== this.scene) {
-        if (obj.userData && obj.userData.isInteractable) {
-          foundInteractable = obj.userData;
-          break;
+    // Prefer the exact aim; nearby rays make small clues easier to select.
+    const offsets = [[0, 0], [-0.025, 0], [0.025, 0], [0, -0.025], [0, 0.025],
+      [-0.025, -0.025], [0.025, -0.025], [-0.025, 0.025], [0.025, 0.025]];
+    for (const [x, y] of offsets) {
+      this.centerCoord.set(x, y);
+      this.raycaster.setFromCamera(this.centerCoord, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+      for (const hit of intersects) {
+        let obj = hit.object;
+        while (obj && obj !== this.scene) {
+          if (obj.userData?.isInteractable) {
+            foundInteractable = obj.userData;
+            break;
+          }
+          obj = obj.parent;
         }
-        obj = obj.parent;
+        if (foundInteractable) break;
+        // Solid foreground geometry must not allow selection through walls.
+        const material = hit.object.material;
+        if (material && !Array.isArray(material) && !material.transparent) break;
       }
       if (foundInteractable) break;
     }
 
     this.currentInteractable = foundInteractable;
     this.setPrompt(foundInteractable);
+    if (foundInteractable) window.dispatchEvent(new Event('hud-attention'));
   }
 
   setPrompt(data) {

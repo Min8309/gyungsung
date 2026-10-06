@@ -1214,3 +1214,25 @@ html, body {
   border-color: #bfa073;
 }
 
+
+/* Keep exploration readable while reducing persistent HUD clutter. */
+.hud-top, .hud-bottom { transition: opacity 0.6s ease; }
+#hud-overlay.quiet .hud-top { opacity: 0.35; }
+#hud-overlay.quiet .hud-bottom { opacity: 0.15; }
+.hud-top:hover, .hud-bottom:hover { opacity: 1 !important; }
+#exploration-objective {
+  position: absolute;
+  top: 105px;
+  left: 24px;
+  max-width: min(440px, calc(100vw - 48px));
+  color: #e4d7bf;
+  background: rgba(18, 12, 8, 0.8);
+  border-left: 2px solid #b78945;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+#exploration-objective[hidden], .puzzle-track-card[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .hud-top, .hud-bottom { transition: none; }
+}

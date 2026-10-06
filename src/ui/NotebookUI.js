@@ -43,6 +43,7 @@ export class NotebookUI {
     // Reactive state updates
     window.addEventListener('notebook-updated', () => this.render());
     window.addEventListener('puzzle-solved', () => this.render());
+    window.addEventListener('inventory-changed', () => this.render());
   }
 
   toggle() {
@@ -84,7 +85,7 @@ export class NotebookUI {
         </div>
       `;
     } else {
-      clues.forEach((clueId) => {
+      clues.filter(id => id !== 'clue_proof_unreadable' || !gameState.notebookClues.has('clue_proof_title')).forEach((clueId) => {
         let clueData = GameConfig.notebookClues[clueId];
         if (!clueData) {
           clueData = Object.values(GameConfig.notebookClues).find(c => c.id === clueId);
@@ -97,6 +98,29 @@ export class NotebookUI {
         }
       });
     }
+
+    const discovered = id => gameState.notebookClues.has(id);
+    const tracks = [
+      ['a', ['clue_calendar', 'clue_clock', 'clue_drawer'], '달력과 시계, 잠긴 서랍 사이에 어떤 연결이 있을까?'],
+      ['b', ['clue_glasses', 'clue_cube', 'clue_proof_glasses'], '안경과 눈동자 활자에 남은 흔적을 살펴보자.'],
+      ['c', ['clue_proof_unreadable', 'clue_proof_title', 'clue_galley_slot', 'clue_rack_types'],
+        discovered('clue_proof_title') ? '교정지의 붉은 표시와 조판대의 빈칸을 비교해보자.' : '읽을 수 없는 교정지와 조판대에 단서가 남아 있다.']
+    ];
+    for (const [key, ids, hint] of tracks) {
+      const card = document.getElementById(`track-puzzle-${key}`);
+      if (card) {
+        card.hidden = !gameState.puzzles[`puzzle_${key}`] && !ids.some(discovered);
+        card.querySelector('.track-hint').textContent = hint;
+      }
+    }
+    let empty = document.getElementById('notebook-puzzles-empty');
+    if (!empty) {
+      empty = document.createElement('p');
+      empty.id = 'notebook-puzzles-empty';
+      document.getElementById('track-puzzle-a')?.before(empty);
+    }
+    empty.textContent = '책상 위 교정지를 조사하면 첫 기록을 남길 수 있다.';
+    empty.hidden = tracks.some(([key]) => !document.getElementById(`track-puzzle-${key}`)?.hidden);
 
     // 2. Render puzzle stamps
     this.updateStamp('stamp-puzzle-a', gameState.puzzles.puzzle_a);
