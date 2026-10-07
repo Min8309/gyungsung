@@ -218,6 +218,22 @@ export class Room {
     return true;
   }
 
+  updateExitSign(time) {
+    const phase = Math.floor(time / 2.5) % 2;
+    if (phase === this.signPhase) return;
+    this.signPhase = phase;
+    const ctx = this.signCanvas.getContext('2d');
+    ctx.fillStyle = '#211910'; ctx.fillRect(0, 0, 768, 256);
+    ctx.strokeStyle = '#75613c'; ctx.lineWidth = 7; ctx.strokeRect(16,16,736,224);
+    // Stable aged wood marks, without changing the legibility of the two glyphs.
+    ctx.strokeStyle = '#36291b'; ctx.lineWidth = 2;
+    for(let i=0;i<12;i++){ctx.beginPath();ctx.moveTo(25,30+i*17);ctx.lineTo(743,35+i*17);ctx.stroke();}
+    ctx.fillStyle = '#d6c59e'; ctx.font = 'bold 138px serif';ctx.textAlign = 'center';
+    ctx.fillText(phase ? '口 出' : '구 출',384,174);
+    ctx.font='22px serif';ctx.fillStyle='#a18c63';ctx.fillText('← 우횡서 · 오른쪽부터 읽으시오',384,218);
+    this.signTexture.needsUpdate = true;
+  }
+
   updateDoor(delta) {
     if (!this.doorOpening || this.doorOpenProgress >= 1) return;
     this.doorOpenProgress = Math.min(1, this.doorOpenProgress + delta / 2.8);
@@ -287,34 +303,21 @@ export class Room {
     this.addColliderBox(new THREE.Vector3(0, 1.45, -15.88), new THREE.Vector3(1.75, 2.7, 0.12));
     this.closedDoorCollider = this.colliders[this.colliders.length - 1];
 
-    // Wooden sign above door: "地下 活版 輪轉機室 (Underground Rotary Press Room)"
-    const signCanvas = document.createElement('canvas');
-    signCanvas.width = 512;
-    signCanvas.height = 128;
-    const sCtx = signCanvas.getContext('2d');
-    sCtx.fillStyle = '#22150c';
-    sCtx.fillRect(0, 0, 512, 128);
-    sCtx.strokeStyle = '#5a3a20';
-    sCtx.lineWidth = 6;
-    sCtx.strokeRect(10, 10, 492, 108);
-    sCtx.fillStyle = '#dfcfb2';
-    sCtx.font = 'bold 36px serif';
-    sCtx.textAlign = 'center';
-    sCtx.fillText('地下 活版 輪轉機室', 256, 65);
-    sCtx.font = '16px serif';
-    sCtx.fillStyle = '#a6241e';
-    sCtx.fillText('【 立 入 禁 止 】', 256, 100);
-
-    const signTex = new THREE.CanvasTexture(signCanvas);
-    const signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.8 });
-    const signMesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.35, 0.04), signMat);
+    // Right-to-left plaque: physical left-to-right glyphs read 구출 / 口出.
+    this.signCanvas = document.createElement('canvas');
+    this.signCanvas.width = 768; this.signCanvas.height = 256;
+    this.signTexture = new THREE.CanvasTexture(this.signCanvas);
+    this.signPhase = -1;
+    this.updateExitSign(0);
+    const signMat = new THREE.MeshStandardMaterial({ map: this.signTexture, roughness: 0.85, emissive: 0x393021, emissiveMap: this.signTexture, emissiveIntensity: 0.35 });
+    const signMesh = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.55, 0.055), signMat);
     signMesh.position.set(0, 3.2, 0.08);
     doorGroup.add(signMesh);
 
     // Set interactive property
     doorGroup.userData = {
       isInteractable: true,
-      name: '지하 윤전기실 철문',
+      name: '출구 철문 · 우횡서 현판',
       description: '육중한 쇠빗장과 낡은 자물쇠로 굳게 닫혀 있는 철문이다. 문틈 너머 깊은 지하에서 묵직한 쇠 굴러가는 소리와 인쇄기의 진동이 희미하게 울려온다. 열쇠가 필요할 것 같다.',
       type: 'door'
     };

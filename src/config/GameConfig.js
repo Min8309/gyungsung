@@ -105,6 +105,9 @@ export const GameConfig = {
 
   // 수첩(Notebook) 기록 문구
   notebookClues: {
+    worklog: { id: 'clue_worklog', text: '작업일지: 안경은 오른쪽 벽 앞치마에 있다. 책상 뒤로 돌아가 획득하고 교정지를 다시 읽는다. 실종자들은 윤전기실로 불려갔다.' },
+    procedure: { id: 'clue_procedure', text: '작업 수칙: 눈동자 큐브는 눈을 위로. 제목의 식·자·공은 노란 표찰 활자장에서 찾아 조판. 날짜는 서랍 번호, 멈춘 시각은 암호.' },
+    maintenance: { id: 'clue_maintenance', text: '정비 기록: 세척액으로 철문 자물쇠를 닦고 조판으로 얻은 열쇠를 사용. 남은 시간 숫자는 암호가 아니다. 시계추 공명은 전원만 켠다.' },
     calendar: { id: 'clue_calendar', puzzle: 'A', text: "24일. 붉은 동그라미. '멈춘 시각에 열어라'라고 적혀 있다." },
     clock: { id: 'clue_clock', puzzle: 'A', text: "시계가 23시 58분에 멈춰 있다. 바늘 끝에 붉은 점." },
     drawer: { id: 'clue_drawer', puzzle: 'A', text: "24번 서랍에만 자물쇠가 있다. 숫자 네 자리." },
@@ -112,12 +115,12 @@ export const GameConfig = {
     proof_glasses: { id: 'clue_proof_glasses', puzzle: 'B', text: "붉은 글씨. '눈이 위를 보게 하라'." },
     cube: { id: 'clue_cube', puzzle: 'B', text: "눈이 그려진 활자 큐브. 한 면에만 눈이 있다." },
     slot: { id: 'clue_slot', puzzle: 'B', text: "큐브가 들어갈 빈 홈이 붉게 번쩍인다." },
-    proof_unreadable: { id: 'clue_proof_unreadable', puzzle: 'C', text: '책상 위 교정지를 발견했다. 글자가 번져 읽을 수 없다. 교정용 안경을 찾아보자.' },
+    proof_unreadable: { id: 'clue_proof_unreadable', puzzle: 'C', text: '책상 위 교정지를 발견했다. 작고 흐릿한 교정 표시를 읽기 어렵다. 교정용 안경을 찾아보자.' },
     proof_title: { id: 'clue_proof_title', puzzle: 'C', text: "『활판실 식자공 의문의 실종 사건』. '식자공' 세 글자에 붉은 줄." },
     galley_slot: { id: 'clue_galley_slot', puzzle: 'C', text: "한 줄에 빈칸이 세 개. 노란 라벨이 붙어 있다." },
     rack_types: { id: 'clue_rack_types', puzzle: 'C', text: "노란 라벨이 붙은 칸에 활자 세 개: 식, 자, 공." },
     benzene: { id: 'clue_benzene', puzzle: 'D', text: "앞치마 주머니의 세척용 벤젠. 굳은 피와 잉크를 지울 수 있다." },
-    apron_text: { id: 'clue_apron_text', puzzle: 'D', text: "세척된 앞치마의 붉은 글씨: '그는 기계 안에 있다'." },
+    apron_text: { id: 'clue_apron_text', puzzle: 'D', text: "철문의 굳은 잉크를 닦아 열쇠 구멍이 드러났다." },
     clock_gong: { id: 'clue_clock_gong', puzzle: 'E', text: "시계추를 강하게 흔들자 자정의 종이 울리며 전원이 인가되었다." },
     mirror_type: { id: 'clue_mirror_type', puzzle: 'A', text: "황동판에 비친 거울상 활자에서 '2358'을 읽어냈다." },
     censor: { id: 'clue_censor', puzzle: 'A', text: "총독부 검열 통보서. 붉은 먹줄 사이로 '23:58에 24번 서랍을 열어라'라는 문구가 드러났다." },

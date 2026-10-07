@@ -1313,3 +1313,18 @@ html, body {
 .exploration-notice-title { display: block; color: #d9b77d; letter-spacing: 0.08em; }
 #exploration-objective p { margin: 8px 0; }
 #exploration-objective small { display: block; color: #bfb097; font-size: 12px; }
+#surgical-ending-caption {
+  position: fixed; bottom: 5vh; left: 0; width: 100%; z-index: 100;
+  text-align: center; color: #cbd8ce; font-family: 'Nanum Myeongjo', serif;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .85));
+  padding: 32px 16px; box-sizing: border-box;
+  opacity: 0; pointer-events: none; transition: opacity 3s;
+}
+#surgical-ending-caption.visible { opacity: 1; pointer-events: auto; }
+#surgical-ending-caption small { letter-spacing: .25em; }
+#surgical-ending-caption h1 { font-size: clamp(22px, 4vw, 36px); }
+#surgical-ending-caption button { background: #172522; color: #cbd8ce; border: 1px solid #687c70; padding: 12px 20px; cursor: pointer; }
+#clue-direction { position: absolute; transform: translate(-50%, -50%); color: #ffe4a6; border: 1px solid #a78d57; background: rgba(13, 20, 17, .85); padding: 7px 10px; font-size: 12px; max-width: 260px; text-align: center; pointer-events: none; }
+#clue-direction[hidden] { display: none; }
+.evidence-paper { white-space: pre-line; background: #c1b391; color: #2b2118; padding: 24px; font-family: 'Nanum Myeongjo', serif; line-height: 1.9; }
+.inspect-next-step { color: #ebcc8f; border-left: 2px solid #a78d57; padding: 8px 12px; line-height: 1.6; }

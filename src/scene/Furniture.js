@@ -295,76 +295,17 @@ export class Furniture {
     };
     this.interactables.push(galley);
 
-    // Polished Copper/Brass Mirror Plate for Negative Type Reflection
-    const mirrorPlateGeo = new THREE.BoxGeometry(0.26, 0.015, 0.34);
-    const mirrorPlateMat = new THREE.MeshStandardMaterial({
-      color: 0xd4a24e,
-      metalness: 0.95,
-      roughness: 0.12,
-    });
-    const mirrorPlate = new THREE.Mesh(mirrorPlateGeo, mirrorPlateMat);
-    mirrorPlate.position.set(0.85, deskH + 0.075, -0.28);
-    mirrorPlate.castShadow = true;
-    mirrorPlate.userData = {
-      isInteractable: true,
-      clueId: 'clue_mirror_type',
-      name: '연마된 황동 반사판',
-      description: '거울처럼 매끄럽게 연마된 황동 판이다. 거꾸로 된 활자를 비추어 정방향을 확인할 수 있다.',
-      type: 'mirror_plate'
-    };
-    this.interactables.push(mirrorPlate);
-    deskGroup.add(mirrorPlate);
-
-    // B. Wooden Hand Ink Roller (먹물 롤러 / Brayer) - 3D Props
-    const rollerGroup = new THREE.Group();
-    rollerGroup.position.set(0.6, deskH + 0.09, -0.1);
-    rollerGroup.rotation.y = 0.4;
-
-    // Ink-black rubber cylinder
-    const cylGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.28, 16);
-    const cylMat = new THREE.MeshStandardMaterial({
-      color: 0x111111,
-      roughness: 0.25,
-      metalness: 0.1,
-    });
-    const cylinder = new THREE.Mesh(cylGeo, cylMat);
-    cylinder.rotation.z = Math.PI / 2;
-    cylinder.castShadow = true;
-    rollerGroup.add(cylinder);
-
-    // Metal Frame Bracket
-    const bracketGeo = new THREE.BoxGeometry(0.32, 0.02, 0.08);
-    const bracket = new THREE.Mesh(bracketGeo, this.brassMat);
-    bracket.position.set(0, 0.04, 0);
-    rollerGroup.add(bracket);
-
-    // Wooden Turned Handle
-    const handleBarGeo = new THREE.CylinderGeometry(0.016, 0.02, 0.18, 12);
-    const handleBar = new THREE.Mesh(handleBarGeo, this.woodMat);
-    handleBar.rotation.x = Math.PI / 2;
-    handleBar.position.set(0, 0.04, 0.12);
-    rollerGroup.add(handleBar);
-
-    rollerGroup.userData = {
-      isInteractable: true,
-      name: '먹물 롤러와 인쇄 레버',
-      description: '아직 굳지 않은 끈적한 먹물이 묻어 있다. 윤전기와 연결된 레버가 달려 있다.',
-      type: 'door' // Can trigger print
-    };
-    this.interactables.push(rollerGroup);
-    deskGroup.add(rollerGroup);
-
     // C. Newsprint Proofs (경성신문 활판 교정지)
     const newsTex = this.tf.createNewspaperTexture();
     const paperMat = new THREE.MeshStandardMaterial({
       map: newsTex,
       roughness: 0.9,
     });
-    const paperGeo = new THREE.PlaneGeometry(0.42, 0.6);
+    const paperGeo = new THREE.PlaneGeometry(0.6, 0.72);
     const paper = new THREE.Mesh(paperGeo, paperMat);
     paper.rotation.x = -Math.PI / 2;
     paper.rotation.z = 0.15;
-    paper.position.set(0.55, deskH + 0.065, 0.25);
+    paper.position.set(0.85, deskH + 0.095, 0.35);
     paper.receiveShadow = true;
     paper.userData = {
       isInteractable: true,

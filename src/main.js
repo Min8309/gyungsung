@@ -1,3 +1,5 @@
+import { PrintShopEvidence } from './scene/PrintShopEvidence.js';
+import { SurgicalEnding } from './scene/SurgicalEnding.js';
 import * as THREE from 'three';
 import { BasementAtmosphere } from './scene/BasementAtmosphere.js';
 import { GhostEncounters } from './systems/GhostEncounters.js';
@@ -45,8 +47,10 @@ class HorrorSpaceApp {
     });
     new BasementAtmosphere(this.scene);
     this.ghostEncounters = new GhostEncounters(this.scene, this.camera, this.soundManager, this.lighting);
+    this.evidence = new PrintShopEvidence(this.scene);
     this.initUIEvents();
-    this.explorationHUD = new ExplorationHUD(this.playerControls.controls);
+    this.room.doorMesh.userData.clueId = 'clue_exit_door';
+    this.explorationHUD = new ExplorationHUD(this.playerControls.controls, this.camera, [...this.props.interactables, ...this.furniture.interactables, this.room.doorMesh]);
     this.animate();
   }
 
@@ -203,6 +207,7 @@ class HorrorSpaceApp {
       this.soundManager.playMetalDoorOpen();
       // Return to the scene so the player sees the leaves swing open.
       this.interactionManager.closeInspect();
+      this.beginSurgicalEnding();
     });
     // Click on start screen to engage pointer lock and audio
     this.startScreen.addEventListener('click', () => {
@@ -216,7 +221,7 @@ class HorrorSpaceApp {
     });
 
     this.playerControls.controls.addEventListener('unlock', () => {
-      if (this.gameEnded) return;
+      if (this.gameEnded || this.ending) return;
       const isModalOpen = this.interactionManager.isInspecting || 
                           this.notebookUI.isOpen || 
                           (this.rewardCardRenderer.modalEl && this.rewardCardRenderer.modalEl.classList.contains('active'));
@@ -227,6 +232,7 @@ class HorrorSpaceApp {
 
     // Global Key shortcuts
     window.addEventListener('keydown', (e) => {
+      if (this.ending && e.code !== 'KeyM') return;
       if (e.code === 'KeyH') {
         // Toggle HUD
         if (this.hudOverlay) {
@@ -247,6 +253,32 @@ class HorrorSpaceApp {
     });
   }
 
+  beginSurgicalEnding() {
+    this.ending = new SurgicalEnding(this.scene);
+    clearInterval(this.playTimer.interval);
+    this.playTimer.startedAt ??= performance.now();
+    this.playTimer.display.hidden = true;
+    this.playTimer.overlay.hidden = true;
+    this.playTimer.finalizing = true;
+    this.endingStartedAt = performance.now();
+    this.soundManager.startSurgicalMachines();
+    this.interactionManager.currentInteractable = null;
+    this.interactionManager.setPrompt(null);
+    window.addEventListener('keydown', e => {
+      if (e.code !== 'KeyM') { e.preventDefault(); e.stopImmediatePropagation(); }
+    }, { capture: true });
+    this.hudOverlay.classList.add('hidden');
+    document.getElementById('crosshair').hidden = true;
+    this.playerControls.controls.unlock();
+    this.startScreen.classList.add('hidden');
+    const caption = document.createElement('div');
+    caption.id = 'surgical-ending-caption';
+    caption.innerHTML = '<small>終幕 · 지하 윤전기실</small><h1>그는 기계 안에 있다.</h1><p>인쇄소의 심장부에서, 또 하나의 작업이 시작되고 있었다.</p><button type="button">처음부터 다시 시작</button>';
+    caption.querySelector('button').addEventListener('click', () => location.reload());
+    document.body.appendChild(caption);
+    setTimeout(() => caption.classList.add('visible'), 6500);
+  }
+
   animate() {
     if (this.gameEnded) return;
     requestAnimationFrame(() => this.animate());
@@ -256,6 +288,16 @@ class HorrorSpaceApp {
     this.lastTime = now;
     const time = (now - this.startTime) / 1000;
 
+    if (this.ending) {
+      this.room.updateExitSign(time);
+    this.room.updateDoor(delta);
+      // Let the player see the door swing before cutting inside the chamber.
+      const elapsed = now - this.endingStartedAt;
+      this.ending.update(time);
+      this.renderer.render(this.scene, elapsed < 2800 ? this.camera : this.ending.camera);
+      return;
+    }
+
     // 1. Update Player Movement & Collision
     this.playerControls.update(delta);
 
@@ -264,6 +306,7 @@ class HorrorSpaceApp {
 
     // 3. Update Props (Swinging pendulum, clock tick sync, eye tracking)
     this.props.update(time, delta, this.soundManager, this.camera);
+    this.room.updateExitSign(time);
     this.room.updateDoor(delta);
 
     // 4. Update Lighting (Bulb sway, flicker buzz)
@@ -279,6 +322,8 @@ class HorrorSpaceApp {
     this.ghostEncounters.update(now,
       this.playerControls.controls.isLocked && !this.playTimer.finalizing,
       this.playTimer.startedAt === null ? 0 : (now - this.playTimer.startedAt) / 1000);
+
+    this.explorationHUD.updateTarget();
 
     // 7. Render Scene
     this.renderer.render(this.scene, this.camera);

@@ -233,7 +233,8 @@ export class PuzzleE_ResonantClock {
         // 12회 타종 종료: 윤전기 전원 강제 인가 및 퍼즐 A 해결 처리
         this.gongSequenceActive = false;
         gameState.isPrintReady = true;
-        gameState.solvePuzzle('puzzle_a');
+        gameState.recordProgress();
+        window.dispatchEvent(new Event('inventory-changed'));
 
         if (this.soundManager) {
           this.soundManager.playPuzzleSuccess();

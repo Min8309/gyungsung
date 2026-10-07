@@ -1,3 +1,4 @@
+import { EVIDENCE } from '../scene/PrintShopEvidence.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { gameState } from '../systems/GameState.js';
 
@@ -43,6 +44,25 @@ export class InspectViewRenderer {
       ? 'clue_proof_unreadable' : clueId);
 
     switch (type) {
+      case 'evidence': {
+        const entry = EVIDENCE[data.evidenceId];
+        const paper = document.createElement('div');
+        paper.className = 'evidence-paper';
+        paper.textContent = entry?.text || '기록이 훼손되어 읽을 수 없다.';
+        this.viewContainer.appendChild(paper);
+        break;
+      }
+      case 'print_roller':
+        this.viewContainer.textContent = gameState.isPrintReady
+          ? '전원이 준비되었다. 레버를 당기면 호외가 인쇄된다. 철문을 열려면 별도로 조판하여 열쇠를 얻고 자물쇠를 세척해야 한다.'
+          : '멈춘 인쇄기다. 24번 서랍의 퓨즈를 얻거나 시계추를 공명시켜 전원을 준비하자.';
+        if (gameState.isPrintReady) {
+          const button = document.createElement('button');
+          button.className = 'inspect-action-btn'; button.textContent = '인쇄 레버 당기기';
+          button.addEventListener('click', () => this.onPrintStart?.());
+          this.actionBar.appendChild(button);
+        }
+        break;
       case 'calendar':
         this.renderCalendarView();
         break;
@@ -79,8 +99,10 @@ export class InspectViewRenderer {
       case 'radio':
         this.renderRadioView();
         break;
-      case 'type_rack_label':
       case 'rack':
+        this.viewContainer.textContent = '평범한 활자 보관장이다. 식·자·공 활자는 노란 표찰이 붙은 별도 칸에서 찾을 수 있다.';
+        break;
+      case 'type_rack_label':
         this.renderTypeRackView();
         break;
       case 'door':
@@ -286,7 +308,7 @@ export class InspectViewRenderer {
 
           <div style="background: #1b120c; border: 1px solid #5a3c20; padding: 12px; border-radius: 4px; text-align: left; font-size: 13px; color: #d0b89b;">
             <div>• <strong>앞치마 주머니</strong>: ${hasBenzene ? '✓ 세척용 벤젠 유리병을 꺼냈습니다.' : '무언가 묵직하고 차가운 유리병이 들어 있습니다.'}</div>
-            <div style="margin-top: 6px;">• <strong>앞치마 천 표면</strong>: ${isSludgeCleared ? '<span style="color:#e6392f; font-weight:bold;">“그는 기계 안에 있다” (붉은 글씨 드러남)</span>' : '굳은 먹물과 핏자국이 말라붙어 있습니다.'}</div>
+            <div style="margin-top: 6px;">• <strong>앞치마 천 표면</strong>: 굳은 먹물과 핏자국이 말라붙어 있습니다. 주머니의 쪽지에는 ‘그는 기계 안에 있다’라고 적혀 있습니다.</div>
           </div>
         </div>
       </div>
@@ -310,7 +332,7 @@ export class InspectViewRenderer {
     }
 
     // 2. 벤젠 병 획득 버튼
-    if (!hasBenzene && this.puzzleD) {
+    if (hasGlasses && !hasBenzene && this.puzzleD) {
       const benzeneBtn = document.createElement('button');
       benzeneBtn.className = 'inspect-action-btn';
       benzeneBtn.textContent = '🧪 앞치마 주머니에서 벤젠 병 꺼내기 (획득)';
@@ -321,20 +343,12 @@ export class InspectViewRenderer {
       this.actionBar.appendChild(benzeneBtn);
     }
 
-    // 3. 벤젠 세척 & 스크러빙 인터랙션 시작 버튼
-    if (this.puzzleD) {
-      const scrubBtn = document.createElement('button');
-      scrubBtn.className = 'inspect-action-btn';
-      scrubBtn.style.background = isSludgeCleared ? '#2a4422' : '#734020';
-      scrubBtn.textContent = isSludgeCleared
-        ? '✓ 자물쇠 슬러지 세척 완료됨'
-        : '🧼 벤젠 세척액으로 자물쇠/열쇠 슬러지 닦아내기 (스크러빙)';
-      scrubBtn.addEventListener('click', () => {
-        this.actionBar.innerHTML = '';
-        this.puzzleD.renderScrubbingView(this.viewContainer, () => this.renderApronGlassesView());
-      });
-      this.actionBar.appendChild(scrubBtn);
-    }
+    const next = document.createElement('p');
+    next.className = 'inspect-next-step';
+    next.textContent = !hasGlasses ? '먼저 안경을 챙기시오.'
+      : !gameState.notebookClues.has('clue_proof_title') ? '다음: 책상 위 교정지를 다시 조사하시오. 세척액은 철문에서 쓰시오.'
+      : '세척액은 철문의 자물쇠를 조사할 때 쓸 수 있소.';
+    this.viewContainer.appendChild(next);
   }
 
   // 6. 교정지 확대 뷰 (퍼즐 B 단서 2 & 퍼즐 C 단서 1)
@@ -355,7 +369,7 @@ export class InspectViewRenderer {
           </div>
         </div>
         <div class="proof-blur-notice">
-          ⚠ 글자가 심하게 번져 보이지 않는다.<br>선명하게 볼 수 있는 '안경'이 필요하다.
+          ⚠ 작고 흐릿한 교정 표시가 잘 보이지 않는다.<br>선명하게 볼 수 있는 '안경'이 필요하다.
         </div>
       `;
     } else {
@@ -381,7 +395,7 @@ export class InspectViewRenderer {
           </div>
 
           <p style="font-size: 13.5px; color: #332418; line-height: 1.8; margin-top: 14px;">
-            "사라진 식자공의 작업대 위에는 기괴한 눈동자 활자 큐브가 놓여 있었으며, 조판 상판의 빈칸에는 피로 얼룩진 글자가 새겨져 있었다..."
+            "사라진 식자공의 작업대 위에는 기괴한 눈동자 활자 큐브가 놓여 있었으며, 조판대에는 빈칸 세 개가 남아 있었다. 노란 표찰의 활자장에서 밑줄 친 식·자·공 활자를 찾아 차례로 채울 것. 눈동자 큐브는 이 빈칸 옆의 별도 네모 홈에 끼울 것."
           </p>
         </div>
       `;
@@ -540,7 +554,7 @@ export class InspectViewRenderer {
           </div>
           <div style="font-size: 13px; color: ${isTypesSolved ? '#55ff77' : '#b89f82'};">
             ${isTypesSolved 
-              ? '✓ [식] [자] [공] 세 글자가 조판되어 비밀 선반이 열렸습니다!' 
+              ? '✓ 식·자·공 조판을 완성하여 녹슨 열쇠를 얻었습니다!'
               : '활자장에서 노란 라벨의 [식], [자], [공] 활자를 찾아 순서대로 꽂으십시오.'}
           </div>
         </div>
@@ -595,6 +609,14 @@ export class InspectViewRenderer {
         this.renderGalleySlotView();
       });
       this.actionBar.appendChild(attachTypesBtn);
+    }
+
+    if (gameState.isPrintReady) {
+      const printButton = document.createElement('button');
+      printButton.className = 'inspect-action-btn';
+      printButton.textContent = '인쇄기 가동 · 호외 출력';
+      printButton.addEventListener('click', () => this.onPrintStart?.());
+      this.actionBar.appendChild(printButton);
     }
 
     // Shortcut button to examine brass mirror plate
@@ -667,13 +689,13 @@ export class InspectViewRenderer {
         <div style="background: #1b120a; border: 2px solid #5a381a; padding: 20px; border-radius: 4px; width: 100%; text-align: center;">
           <div style="font-size: 32px; margin-bottom: 8px;">🚪⛓️</div>
           <div style="font-size: 18px; font-weight: 800; color: #eeddc3; margin-bottom: 6px;">
-            地下 活版 輪轉機室 (지하 윤전기실)
+            口出 · 출구 (출구 · 지하 윤전기실)
           </div>
           <div style="font-size: 14px; color: ${isUnlocked ? '#55ff77' : '#b89f82'}; line-height: 1.6;">
             ${isUnlocked 
               ? '✓ 쇠빗장이 풀리고 철문이 열렸습니다! 문틈 너머로 윤전기의 묵직한 진동이 울려 퍼집니다.'
               : (!isSludgeCleared
-                  ? '자물쇠 구멍이 굳은 핏덩이와 잉크 슬러지로 막혀 있어 일반 열쇠가 들어가지 않습니다! 세척액(벤젠)으로 닦아내야 합니다.'
+                  ? '자물쇠 구멍이 굳은 핏덩이와 잉크 슬러지로 막혀 있어 열쇠가 들어가지 않습니다. 오른쪽 벽 앞치마의 주머니에서 세척액을 챙긴 뒤 이 자물쇠를 닦으시오.'
                   : (hasKey 
                       ? '슬러지가 제거되어 열쇠를 꽂을 수 있습니다. [머리카락 엉킨 녹슨 열쇠]를 돌려 빗장을 여십시오.'
                       : '자물쇠 구멍은 뚫렸으나, 문을 열 [녹슨 열쇠]가 필요합니다.'))}
@@ -683,7 +705,7 @@ export class InspectViewRenderer {
     `;
 
     // 1. 슬러지가 막혀 있으면 스크러빙 세척 버튼
-    if (!isSludgeCleared && this.puzzleD) {
+    if (!isSludgeCleared && this.puzzleD && gameState.hasItem('benzene_bottle')) {
       const scrubBtn = document.createElement('button');
       scrubBtn.className = 'inspect-action-btn';
       scrubBtn.style.background = '#8a331c';

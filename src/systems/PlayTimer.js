@@ -1,4 +1,4 @@
-export const PLAY_DURATION_MS = 180_000;
+export const PLAY_DURATION_MS = 600_000;
 export const FINALE_DURATION_MS = 3_000;
 
 export class PlayTimer {
@@ -9,7 +9,7 @@ export class PlayTimer {
     this.finalizing = false;
     this.display = document.createElement('div');
     this.display.id = 'play-timer';
-    this.display.innerHTML = '<span>남은 시간</span><strong>03:00</strong>';
+    this.display.innerHTML = '<span>남은 시간</span><strong>10:00</strong>';
     document.body.appendChild(this.display);
     this.overlay = document.createElement('div');
     this.overlay.id = 'timeout-overlay';

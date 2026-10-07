@@ -47,6 +47,38 @@ export class SoundManager {
     }
   }
 
+  startSurgicalMachines() {
+    this.ensureContext();
+    if (!this.ctx || this.surgicalMachinesStarted) return;
+    this.surgicalMachinesStarted = true;
+    const ctx = this.ctx;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 3);
+    gain.connect(this.masterGain);
+    for (const frequency of [73, 149, 611]) {
+      const motor = ctx.createOscillator();
+      motor.type = 'sawtooth'; motor.frequency.value = frequency;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass'; filter.frequency.value = 950;
+      motor.connect(filter).connect(gain); motor.start();
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 0.7;
+      const depth = ctx.createGain(); depth.gain.value = 9;
+      lfo.connect(depth).connect(motor.frequency); lfo.start();
+    }
+    this.surgicalInterval = setInterval(() => {
+      const tone = ctx.createOscillator(), envelope = ctx.createGain();
+      tone.type = 'triangle';
+      tone.frequency.setValueAtTime(1350, ctx.currentTime);
+      tone.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.2);
+      envelope.gain.setValueAtTime(0.035, ctx.currentTime);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+      tone.connect(envelope).connect(this.masterGain);
+      tone.start(); tone.stop(ctx.currentTime + 0.35);
+      tone.onended = () => { tone.disconnect(); envelope.disconnect(); };
+    }, 1700);
+  }
+
   // 1. Dark Atmospheric Horror Room Drone
   startHorrorDrone() {
     if (!this.ctx) return;

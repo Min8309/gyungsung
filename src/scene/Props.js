@@ -285,7 +285,7 @@ export class Props {
   buildCursedCube() {
     const cubeGroup = new THREE.Group();
     // Placed on the main central typesetting desk near center view (X = 0.22, Y = 1.05, Z = 1.35)
-    cubeGroup.position.set(0.22, 1.05, 1.35);
+    cubeGroup.position.set(0.22, 1.05, 0.75);
 
     // Sharp high-contrast eye texture on 1 face, metal lead on other 5 faces
     const sharpEyeTex = this.tf.createSharpEyeTexture();
