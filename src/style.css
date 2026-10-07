@@ -1302,3 +1302,14 @@ html, body {
   bottom: -4px;
   transform: rotate(45deg);
 }
+
+/* A compact period-style notice guides newcomers toward their first clue. */
+#exploration-objective {
+  max-width: min(330px, calc(100vw - 48px));
+  border: 1px solid rgba(183, 137, 69, 0.45);
+  border-left: 3px solid #b78945;
+  font-family: 'Nanum Myeongjo', serif;
+}
+.exploration-notice-title { display: block; color: #d9b77d; letter-spacing: 0.08em; }
+#exploration-objective p { margin: 8px 0; }
+#exploration-objective small { display: block; color: #bfb097; font-size: 12px; }
