@@ -119,25 +119,33 @@ export class Room {
     const lintel = new THREE.Mesh(new THREE.PlaneGeometry(1.76, 1.45), wallMaterial);
     lintel.position.set(0, 3.575, -16);
     this.scene.add(lintel);
+
+    this.recessedWallParts = [];
     const landing = new THREE.Mesh(new THREE.PlaneGeometry(1.76, 2.4), floorMaterial);
     landing.rotation.x = -Math.PI / 2;
     landing.position.set(0, 0, -17.2);
     this.scene.add(landing);
+    this.recessedWallParts.push(landing);
+
     const landingCeiling = new THREE.Mesh(new THREE.PlaneGeometry(1.76, 2.4), ceilingMaterial);
     landingCeiling.rotation.x = Math.PI / 2;
     landingCeiling.position.set(0, 2.85, -17.2);
     this.scene.add(landingCeiling);
+    this.recessedWallParts.push(landingCeiling);
+
     for (const x of [-0.88, 0.88]) {
       const wall = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.85), wallMaterial);
       wall.rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2;
       wall.position.set(x, 1.425, -17.2);
       this.scene.add(wall);
+      this.recessedWallParts.push(wall);
       this.addColliderBox(new THREE.Vector3(x, 1.425, -17.2), new THREE.Vector3(0.1, 2.85, 2.4));
     }
     const endWall = new THREE.Mesh(new THREE.PlaneGeometry(1.76, 2.85), wallMaterial);
     endWall.position.set(0, 1.425, -18.4);
     this.scene.add(endWall);
-    this.addColliderBox(new THREE.Vector3(0, 1.425, -18.45), new THREE.Vector3(1.76, 2.85, 0.1));
+    this.recessedWallParts.push(endWall);
+    this.endWallCollider = this.addColliderBox(new THREE.Vector3(0, 1.425, -18.45), new THREE.Vector3(1.76, 2.85, 0.1));
 
     let surfaceSeed = 19341024;
     for (const mesh of this.scene.children) {
@@ -214,7 +222,13 @@ export class Room {
     if (this.doorOpening) return false;
     this.doorOpening = true;
     this.doorLockParts.forEach(part => { part.visible = false; });
-    this.doorMesh.userData.description = '자물쇠가 풀려 철문이 열렸다. 문 너머로 인쇄소의 어두운 공간이 드러난다.';
+    if (this.recessedWallParts) {
+      this.recessedWallParts.forEach(part => { part.visible = false; });
+    }
+    if (this.endWallCollider) {
+      this.colliders = this.colliders.filter(box => box !== this.endWallCollider);
+    }
+    this.doorMesh.userData.description = '자물쇠가 풀려 철문이 열렸다. 문 너머로 어둡고 기괴한 방이 드러난다...';
     return true;
   }
 

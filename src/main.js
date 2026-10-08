@@ -1,5 +1,5 @@
 import { PrintShopEvidence } from './scene/PrintShopEvidence.js';
-import { SurgicalEnding } from './scene/SurgicalEnding.js';
+import { ScreamingRoomEnding } from './scene/ScreamingRoomEnding.js';
 import * as THREE from 'three';
 import { BasementAtmosphere } from './scene/BasementAtmosphere.js';
 import { GhostEncounters } from './systems/GhostEncounters.js';
@@ -207,8 +207,12 @@ class HorrorSpaceApp {
       this.soundManager.playMetalDoorOpen();
       // Return to the scene so the player sees the leaves swing open.
       this.interactionManager.closeInspect();
-      this.beginSurgicalEnding();
+      this.beginScreamingRoomEnding();
     });
+    // 테스트용 전역 트리거
+    window.__triggerEnding = () => {
+      window.dispatchEvent(new CustomEvent('door-unlocked'));
+    };
     // Click on start screen to engage pointer lock and audio
     this.startScreen.addEventListener('click', () => {
       this.soundManager.ensureContext();
@@ -253,15 +257,18 @@ class HorrorSpaceApp {
     });
   }
 
-  beginSurgicalEnding() {
-    this.ending = new SurgicalEnding(this.scene);
+  beginScreamingRoomEnding() {
+    this.ending = new ScreamingRoomEnding(this.scene);
     clearInterval(this.playTimer.interval);
     this.playTimer.startedAt ??= performance.now();
     this.playTimer.display.hidden = true;
     this.playTimer.overlay.hidden = true;
     this.playTimer.finalizing = true;
     this.endingStartedAt = performance.now();
-    this.soundManager.startSurgicalMachines();
+
+    // 1. 수많은 얼굴들의 비명 및 심장 박동 사운드 시작
+    this.soundManager.startScreamingRoomAudio();
+
     this.interactionManager.currentInteractable = null;
     this.interactionManager.setPrompt(null);
     window.addEventListener('keydown', e => {
@@ -271,12 +278,33 @@ class HorrorSpaceApp {
     document.getElementById('crosshair').hidden = true;
     this.playerControls.controls.unlock();
     this.startScreen.classList.add('hidden');
+
+    // 2. 붉은 화면 엔딩 오버레이 엘리먼트 생성
+    const redOverlay = document.createElement('div');
+    redOverlay.id = 'red-ending-overlay';
+    document.body.appendChild(redOverlay);
+
+    // 붉은 화면 단계적 전환 연출 (2.5초 후 붉은 맥박 -> 5.2초 후 완전한 핏빛 화면 잠식)
+    setTimeout(() => {
+      redOverlay.classList.add('pulsing');
+    }, 2500);
+
+    setTimeout(() => {
+      redOverlay.classList.add('full-red');
+    }, 5200);
+
+    // 3. 엔딩 텍스트 및 다시 시작 버튼 출력
     const caption = document.createElement('div');
-    caption.id = 'surgical-ending-caption';
-    caption.innerHTML = '<small>終幕 · 지하 윤전기실</small><h1>그는 기계 안에 있다.</h1><p>인쇄소의 심장부에서, 또 하나의 작업이 시작되고 있었다.</p><button type="button">처음부터 다시 시작</button>';
+    caption.id = 'screaming-ending-caption';
+    caption.innerHTML = `
+      <small>終幕 · 붉은 비명의 방</small>
+      <h1>그들의 절규는 끝나지 않았다</h1>
+      <p>철문 너머에 갇혀 있던 수많은 원혼의 얼굴들이 일제히 당신을 응시하며 비명을 지른다.<br>경성의 지하 깊은 곳에 묻힌 비극은 영원히 붉은 피와 비명 속에 잠겨 버렸다.</p>
+      <button type="button">처음부터 다시 시작</button>
+    `;
     caption.querySelector('button').addEventListener('click', () => location.reload());
     document.body.appendChild(caption);
-    setTimeout(() => caption.classList.add('visible'), 6500);
+    setTimeout(() => caption.classList.add('visible'), 6800);
   }
 
   animate() {
@@ -290,11 +318,11 @@ class HorrorSpaceApp {
 
     if (this.ending) {
       this.room.updateExitSign(time);
-    this.room.updateDoor(delta);
-      // Let the player see the door swing before cutting inside the chamber.
-      const elapsed = now - this.endingStartedAt;
-      this.ending.update(time);
-      this.renderer.render(this.scene, elapsed < 2800 ? this.camera : this.ending.camera);
+      this.room.updateDoor(delta);
+      const elapsedSeconds = (now - this.endingStartedAt) / 1000;
+      this.ending.update(time, elapsedSeconds);
+      // 처음 2초간은 플레이어 시점에서 문이 열리는 것을 관찰하고, 이후 방 안으로 진입하는 시네마틱 카메라로 전환
+      this.renderer.render(this.scene, elapsedSeconds < 2.0 ? this.camera : this.ending.camera);
       return;
     }
 

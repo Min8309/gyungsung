@@ -47,36 +47,100 @@ export class SoundManager {
     }
   }
 
-  startSurgicalMachines() {
+  // 벽과 천장의 무수히 많은 얼굴들이 비명을 지르는 오디오 연출
+  startScreamingRoomAudio() {
     this.ensureContext();
-    if (!this.ctx || this.surgicalMachinesStarted) return;
-    this.surgicalMachinesStarted = true;
+    if (!this.ctx || this.screamingRoomStarted) return;
+    this.screamingRoomStarted = true;
     const ctx = this.ctx;
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 3);
-    gain.connect(this.masterGain);
-    for (const frequency of [73, 149, 611]) {
-      const motor = ctx.createOscillator();
-      motor.type = 'sawtooth'; motor.frequency.value = frequency;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass'; filter.frequency.value = 950;
-      motor.connect(filter).connect(gain); motor.start();
-      const lfo = ctx.createOscillator(); lfo.frequency.value = 0.7;
-      const depth = ctx.createGain(); depth.gain.value = 9;
-      lfo.connect(depth).connect(motor.frequency); lfo.start();
+
+    // 1. 공포감 넘치는 점진적 심장 박동 (Heartbeat)
+    const hbGain = ctx.createGain();
+    hbGain.gain.setValueAtTime(0.45, ctx.currentTime);
+    hbGain.connect(this.masterGain);
+
+    let beatTime = ctx.currentTime + 0.1;
+    for (let b = 0; b < 14; b++) {
+      [0, 0.17].forEach(offset => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.setValueAtTime(62, beatTime + offset);
+        osc.frequency.exponentialRampToValueAtTime(28, beatTime + offset + 0.12);
+        gain.gain.setValueAtTime(0.5, beatTime + offset);
+        gain.gain.exponentialRampToValueAtTime(0.001, beatTime + offset + 0.16);
+        osc.connect(gain).connect(hbGain);
+        osc.start(beatTime + offset);
+        osc.stop(beatTime + offset + 0.2);
+      });
+      beatTime += Math.max(0.35, 0.75 - b * 0.035);
     }
-    this.surgicalInterval = setInterval(() => {
-      const tone = ctx.createOscillator(), envelope = ctx.createGain();
-      tone.type = 'triangle';
-      tone.frequency.setValueAtTime(1350, ctx.currentTime);
-      tone.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.2);
-      envelope.gain.setValueAtTime(0.035, ctx.currentTime);
-      envelope.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
-      tone.connect(envelope).connect(this.masterGain);
-      tone.start(); tone.stop(ctx.currentTime + 0.35);
-      tone.onended = () => { tone.disconnect(); envelope.disconnect(); };
-    }, 1700);
+
+    // 2. 비명 합창 (Screaming Faces Chorus)
+    const screamMasterGain = ctx.createGain();
+    screamMasterGain.gain.setValueAtTime(0.01, ctx.currentTime);
+    screamMasterGain.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + 2.0);
+    screamMasterGain.gain.linearRampToValueAtTime(0.65, ctx.currentTime + 5.5);
+    screamMasterGain.connect(this.masterGain);
+
+    // 찢어지는 쇳소리와 거친 숨소리/절규 노이즈 (Bandpassed Noise)
+    const bufferSize = ctx.sampleRate * 8;
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    noiseSource.loop = true;
+
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(1200, ctx.currentTime);
+    noiseFilter.Q.setValueAtTime(5.0, ctx.currentTime);
+
+    // 필터 요동 (비명의 떨림)
+    const noiseLfo = ctx.createOscillator();
+    noiseLfo.frequency.setValueAtTime(6.2, ctx.currentTime);
+    const noiseLfoGain = ctx.createGain();
+    noiseLfoGain.gain.setValueAtTime(700, ctx.currentTime);
+    noiseLfo.connect(noiseLfoGain).connect(noiseFilter.frequency);
+    noiseLfo.start();
+
+    const noiseVol = ctx.createGain();
+    noiseVol.gain.setValueAtTime(0.18, ctx.currentTime);
+    noiseSource.connect(noiseFilter).connect(noiseVol).connect(screamMasterGain);
+    noiseSource.start();
+
+    // 3. 다중 불협화음 비명 보이스 (Wailing souls)
+    const pitches = [430, 680, 920, 1180, 1450, 1820, 2240, 2600];
+    pitches.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      osc.type = idx % 2 === 0 ? 'sawtooth' : 'triangle';
+      const voiceGain = ctx.createGain();
+      voiceGain.gain.setValueAtTime(0.06, ctx.currentTime);
+
+      const now = ctx.currentTime;
+      osc.frequency.setValueAtTime(freq, now);
+      // 문 열리며 비명이 점차 치솟고 요동침
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.4, now + 2.2);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.85, now + 4.2);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.7, now + 6.8);
+
+      // 떨리는 성대 바이브레이션
+      const vib = ctx.createOscillator();
+      vib.frequency.setValueAtTime(7.5 + idx * 0.7, now);
+      const vGain = ctx.createGain();
+      vGain.gain.setValueAtTime(50 + idx * 12, now);
+      vib.connect(vGain).connect(osc.frequency);
+      vib.start();
+
+      osc.connect(voiceGain).connect(screamMasterGain);
+      osc.start();
+    });
+  }
+
+  startSurgicalMachines() {
+    this.startScreamingRoomAudio();
   }
 
   // 1. Dark Atmospheric Horror Room Drone
