@@ -213,6 +213,10 @@ class HorrorSpaceApp {
     window.__triggerEnding = () => {
       window.dispatchEvent(new CustomEvent('door-unlocked'));
     };
+    window.__triggerPrint = () => {
+      this.soundManager.ensureContext();
+      this.rewardCardRenderer.startSequence();
+    };
     // Click on start screen to engage pointer lock and audio
     this.startScreen.addEventListener('click', () => {
       this.soundManager.ensureContext();
